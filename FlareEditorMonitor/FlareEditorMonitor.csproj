@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build">
+    <PropertyGroup>
+        <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration> 
+        <OutputPath>bin</OutputPath>
+        <AssemblyName>FlareEditorMonitor</AssemblyName>
+        <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+        <OutputType>Library</OutputType>
+    </PropertyGroup>
+    <ItemGroup>
+        <Compile Include="src/*.cs" />
+    </ItemGroup>
+    <ItemGroup>
+        <Reference Include="System" />
+    </ItemGroup>
+    <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+        <OutputPath>bin</OutputPath>
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>full</DebugType>
+        <Optimize>false</Optimize>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)'=='Release'">
+        <OutputPath>bin</OutputPath>
+        <Optimize>true</Optimize>
+    </PropertyGroup>
+    <ItemGroup>
+        <ProjectReference Include="../FlareEngine/cs/FlareCS.csproj">
+            <Name>FlareCS</Name>
+        </ProjectReference>
+    </ItemGroup>
+    <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

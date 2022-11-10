@@ -1,0 +1,9 @@
+[submodule "FlareEngine"]
+	path = FlareEngine
+	url = https://github.com/rGovers/FlareEngine.git
+[submodule "FlareEditor/lib/glfw"]
+	path = FlareEditor/lib/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "FlareEditor/lib/imgui"]
+	path = FlareEditor/lib/imgui
+	url = https://github.com/ocornut/imgui.git
