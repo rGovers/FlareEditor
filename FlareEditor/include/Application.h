@@ -21,7 +21,16 @@ protected:
 
 public:
     Application(uint32_t a_width, uint32_t a_height, const std::string_view& a_title);
-    ~Application();
+    virtual ~Application();
 
     void Run();
+
+    virtual void Update(double a_delta, double a_time) = 0;
+
+    inline GLFWwindow* GetWindow() const
+    {
+        return m_window;
+    }
+
+    void Close();
 };

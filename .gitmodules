@@ -7,3 +7,6 @@
 [submodule "FlareEditor/lib/imgui"]
 	path = FlareEditor/lib/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "FlareEditor/lib/glm"]
+	path = FlareEditor/lib/glm
+	url = https://github.com/g-truc/glm.git

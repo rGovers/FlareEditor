@@ -1,3 +1,6 @@
 *.dll
 *.pdb
 *.exe
+FlareNative
+imgui.ini
+mono_crash*

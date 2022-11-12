@@ -2,9 +2,11 @@
 
 #include <assert.h>
 
+#include "Logger.h"
+
 static void ErrorCallback(int a_error, const char* a_description)
 {
-    printf("Error: %s \n", a_description);
+    Logger::Error(a_description);
 }
 
 Application::Application(uint32_t a_width, uint32_t a_height, const std::string_view& a_title)
@@ -49,13 +51,30 @@ Application::~Application()
 
 void Application::Run()
 {
+    const double startTime = glfwGetTime();
+    double prevTime = startTime;
+
     while (!glfwWindowShouldClose(m_window))
     {
+        // ImGui resets context so need to set
+        glfwMakeContextCurrent(m_window);
+
         glfwPollEvents();
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
+        const double time = glfwGetTime();
+
+        Update(time - prevTime, time - startTime);
+
         glfwSwapBuffers(m_window);
+
+        prevTime = time;
     }
+}
+
+void Application::Close()
+{
+    glfwSetWindowShouldClose(m_window, GLFW_TRUE);
 }
