@@ -4,16 +4,16 @@
 
 class ProcessManager;
 
-class GameWindow : public Window
+class ControlWindow : public Window
 {
 private:
     ProcessManager* m_processManager;
-    
+
 protected:
 
 public:
-    GameWindow(ProcessManager* a_processManager);
-    ~GameWindow();
+    ControlWindow(ProcessManager* a_processManager);
+    ~ControlWindow();
 
     virtual void Update();
 };

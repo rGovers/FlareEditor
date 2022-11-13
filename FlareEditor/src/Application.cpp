@@ -31,6 +31,7 @@ Application::Application(uint32_t a_width, uint32_t a_height, const std::string_
     if (!m_window)
     {
         glfwTerminate();
+        
         assert(0);
     }
     glfwMakeContextCurrent(m_window);

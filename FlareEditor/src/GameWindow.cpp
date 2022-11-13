@@ -1,8 +1,12 @@
 #include "Windows/GameWindow.h"
 
-GameWindow::GameWindow() : Window("Game")
-{
+#include <imgui.h>
 
+#include "ProcessManager.h"
+
+GameWindow::GameWindow(ProcessManager* a_processManager) : Window("Game")
+{
+    m_processManager = a_processManager;
 }
 GameWindow::~GameWindow()
 {
@@ -11,5 +15,11 @@ GameWindow::~GameWindow()
 
 void GameWindow::Update()
 {
+    const ImVec2 vMin = ImGui::GetWindowContentRegionMin();
+    const ImVec2 vMax = ImGui::GetWindowContentRegionMax();
+    const ImVec2 size = { vMax.x - vMin.x, vMax.y - vMin.y };
+
+    m_processManager->SetSize((uint32_t)size.x, (uint32_t)size.y);
     
+    ImGui::Image((ImTextureID)m_processManager->GetImage(), size);
 }

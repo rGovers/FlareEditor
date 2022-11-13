@@ -5,6 +5,7 @@
 
 #include <assert.h>
 #include <cstdlib>
+#include <poll.h>
 #include <signal.h>
 #include <string>
 #include <sys/socket.h>
@@ -67,17 +68,57 @@ ProcessManager::ProcessManager()
         assert(0);
     }
 
+    m_resize = false;
+
     m_width = 1280;
     m_height = 720;
+
+    glGenTextures(1, &m_tex);
+    glBindTexture(GL_TEXTURE_2D, m_tex);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }   
 ProcessManager::~ProcessManager()
 {
+    glDeleteTextures(1, &m_tex);
+
     close(m_serverSock);
 }
 
+PipeMessage ProcessManager::RecieveMessage() const
+{
+    PipeMessage msg;
+
+    const uint32_t size = (uint32_t)read(m_pipeSock, &msg, PipeMessage::Size);
+    if (size >= 8)
+    {
+        msg.Data = new char[msg.Length];
+        char* DataBuffer = msg.Data;
+        uint32_t len = DataBuffer - msg.Data;
+        while (len < msg.Length)
+        {
+            DataBuffer += read(m_pipeSock, DataBuffer, msg.Length - len);
+
+            len = DataBuffer - msg.Data;
+        }
+
+        return msg;
+    }
+
+    msg.Type = PipeMessageType_Null;
+    msg.Length = 0;
+    msg.Data = nullptr;
+
+    return msg;
+}
 void ProcessManager::PushMessage(const PipeMessage& a_message) const
 {
-    write(m_pipeSock, &a_message, 8);
+    write(m_pipeSock, &a_message, PipeMessage::Size);
     write(m_pipeSock, a_message.Data, a_message.Length);
 }
 
@@ -161,9 +202,88 @@ bool ProcessManager::Start()
 }
 void ProcessManager::Update()
 {
+    if (m_pipeSock == -1 || m_process == -1)
+    {
+        return;
+    }
 
+    struct pollfd fds;
+    fds.fd = m_pipeSock;
+    fds.events = POLLIN;
+
+    while (poll(&fds, 1, 1) > 0)
+    {
+        if (fds.revents & (POLLNVAL | POLLERR | POLLHUP))
+        {
+            m_pipeSock = -1;
+
+            return;
+        }
+
+        if (fds.revents & POLLIN)
+        {
+            const PipeMessage msg = RecieveMessage();
+
+            switch (msg.Type)
+            {
+            case PipeMessageType_PushFrame:
+            {
+                if (msg.Length == m_width * m_height * 4)
+                {
+                    glBindTexture(GL_TEXTURE_2D, m_tex);
+                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, msg.Data);
+                }
+
+                break;
+            }
+            default:
+            {
+                Logger::Error("Invalid Pipe Message: " + std::to_string(msg.Type));
+
+                break;
+            }
+            }
+            
+            if (msg.Data)
+            {
+                delete[] msg.Data;
+            }
+        }
+    }
+
+    if (m_resize)
+    {
+        m_resize = false;
+
+        glm::ivec2 size = glm::ivec2((int)m_width, (int)m_height);
+
+        PipeMessage msg;
+        msg.Type = PipeMessageType_Resize;
+        msg.Length = sizeof(glm::ivec2);
+        msg.Data = (char*)&size;
+
+        PushMessage(msg);
+    }
 }
 void ProcessManager::Stop()
 {
-    
+    Logger::Message("Stopping FlareEngine Instance");
+    PipeMessage msg;
+    msg.Type = PipeMessageType_Close;
+
+    PushMessage(msg);
+
+    close(m_pipeSock);
+    m_pipeSock = -1;
+    m_process = -1;
+}
+void ProcessManager::SetSize(uint32_t a_width, uint32_t a_height)
+{
+    if (m_width != a_width || m_height != a_height)
+    {
+        m_width = a_width;
+        m_height = a_height;
+
+        m_resize = true;
+    }
 }

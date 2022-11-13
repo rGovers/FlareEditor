@@ -8,6 +8,7 @@
 
 #include "ProcessManager.h"
 #include "Windows/ConsoleWindow.h"
+#include "Windows/ControlWindow.h"
 #include "Windows/EditorWindow.h"
 #include "Windows/GameWindow.h"
 
@@ -108,13 +109,17 @@ AppMain::AppMain() : Application(1280, 720, "FlareEditor")
     m_process = new ProcessManager();
 
     m_windows.emplace_back(new ConsoleWindow());
+    m_windows.emplace_back(new ControlWindow(m_process));
     m_windows.emplace_back(new EditorWindow());
-    m_windows.emplace_back(new GameWindow());
-
-    m_process->Start();
+    m_windows.emplace_back(new GameWindow(m_process));
 }
 AppMain::~AppMain()
 {
+    if (m_process->IsRunning())
+    {
+        m_process->Stop();
+    }
+
     for (Window* wind : m_windows)
     {
         delete wind;
@@ -134,6 +139,8 @@ void AppMain::Update(double a_delta, double a_time)
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+
+    m_process->Update();
 
     if (ImGui::BeginMainMenuBar())
     {
@@ -177,7 +184,12 @@ void AppMain::Update(double a_delta, double a_time)
 
                 if (ImGui::MenuItem("Game"))
                 {
-                    m_windows.emplace_back(new GameWindow());
+                    m_windows.emplace_back(new GameWindow(m_process));
+                }
+
+                if (ImGui::MenuItem("Control"))
+                {
+                    m_windows.emplace_back(new ControlWindow(m_process));
                 }
 
                 if (ImGui::MenuItem("Console"))
