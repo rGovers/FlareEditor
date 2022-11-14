@@ -133,12 +133,17 @@ AppMain::~AppMain()
 }
 
 void AppMain::Update(double a_delta, double a_time)
-{
-    ImGuiIO& io = ImGui::GetIO();
-
+{    
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+
+    ImGuiIO& io = ImGui::GetIO();
+
+    if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
+    {
+        ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+    }
 
     m_process->Update();
 

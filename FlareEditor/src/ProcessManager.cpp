@@ -119,7 +119,10 @@ PipeMessage ProcessManager::RecieveMessage() const
 void ProcessManager::PushMessage(const PipeMessage& a_message) const
 {
     write(m_pipeSock, &a_message, PipeMessage::Size);
-    write(m_pipeSock, a_message.Data, a_message.Length);
+    if (a_message.Data != nullptr)
+    {
+        write(m_pipeSock, a_message.Data, a_message.Length);
+    }
 }
 
 bool ProcessManager::Start()
@@ -236,6 +239,36 @@ void ProcessManager::Update()
 
                 break;
             }
+            case PipeMessageType_Message:
+            {
+                constexpr uint32_t TypeSize = sizeof(e_LoggerMessageType);
+
+                const std::string_view str = std::string_view(msg.Data + TypeSize, msg.Length - TypeSize);
+
+                switch (*(e_LoggerMessageType*)msg.Data)
+                {
+                case LoggerMessageType_Message:
+                {
+                    Logger::Message(str);
+
+                    break;
+                }
+                case LoggerMessageType_Warning:
+                {
+                    Logger::Warning(str);
+
+                    break;
+                }
+                case LoggerMessageType_Error:
+                {
+                    Logger::Error(str);
+
+                    break;
+                }
+                }
+
+                break;
+            }
             default:
             {
                 Logger::Error("Invalid Pipe Message: " + std::to_string(msg.Type));
@@ -270,6 +303,8 @@ void ProcessManager::Stop()
     Logger::Message("Stopping FlareEngine Instance");
     PipeMessage msg;
     msg.Type = PipeMessageType_Close;
+    msg.Length = 0;
+    msg.Data = nullptr;
 
     PushMessage(msg);
 

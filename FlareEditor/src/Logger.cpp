@@ -29,7 +29,7 @@ void Logger::Message(const std::string_view& a_string)
 
     for (ConsoleWindow* console : Windows)
     {
-        console->AddMessage(a_string, MessageType_Message);
+        console->AddMessage(a_string, LoggerMessageType_Message);
     }
 }
 void Logger::Warning(const std::string_view& a_string)
@@ -38,7 +38,7 @@ void Logger::Warning(const std::string_view& a_string)
 
     for (ConsoleWindow* console : Windows)
     {
-        console->AddMessage(a_string, MessageType_Warning);
+        console->AddMessage(a_string, LoggerMessageType_Warning);
     }
 }
 void Logger::Error(const std::string_view& a_string)
@@ -47,6 +47,6 @@ void Logger::Error(const std::string_view& a_string)
 
     for (ConsoleWindow* console : Windows)
     {
-        console->AddMessage(a_string, MessageType_Error);
+        console->AddMessage(a_string, LoggerMessageType_Error);
     }
 }

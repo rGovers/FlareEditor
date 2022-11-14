@@ -18,7 +18,7 @@ ConsoleWindow::~ConsoleWindow()
     Logger::RemoveConsoleWindow(this);
 }
 
-void ConsoleWindow::AddMessage(const std::string_view& a_message, e_MessageType a_type)
+void ConsoleWindow::AddMessage(const std::string_view& a_message, e_LoggerMessageType a_type)
 {
     if (m_messages.size() > MaxMessages)
     {
@@ -115,14 +115,14 @@ void ConsoleWindow::Update()
 
         switch (msg.Type)
         {
-        case MessageType_Error:
+        case LoggerMessageType_Error:
         {
             color = ImVec4(1.0, 0.0f, 0.0f, 1.0f);
             display = displayError;
 
             break;
         }
-        case MessageType_Warning:
+        case LoggerMessageType_Warning:
         {   
             color = ImVec4(1.0, 1.0f, 0.0f, 1.0f);
             display = displayWarning;

@@ -5,11 +5,11 @@
 
 class ConsoleWindow;
 
-enum e_MessageType
+enum e_LoggerMessageType : uint32_t
 {
-    MessageType_Message,
-    MessageType_Warning,
-    MessageType_Error
+    LoggerMessageType_Message,
+    LoggerMessageType_Warning,
+    LoggerMessageType_Error
 };
 
 class Logger
