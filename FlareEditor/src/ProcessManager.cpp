@@ -214,6 +214,8 @@ void ProcessManager::Update()
     fds.fd = m_pipeSock;
     fds.events = POLLIN;
 
+    bool set = false;
+
     while (poll(&fds, 1, 1) > 0)
     {
         if (fds.revents & (POLLNVAL | POLLERR | POLLHUP))
@@ -231,10 +233,12 @@ void ProcessManager::Update()
             {
             case PipeMessageType_PushFrame:
             {
-                if (msg.Length == m_width * m_height * 4)
+                if (msg.Length == m_width * m_height * 4 && !set)
                 {
                     glBindTexture(GL_TEXTURE_2D, m_tex);
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, msg.Data);
+
+                    set = true;
                 }
 
                 break;
@@ -271,7 +275,7 @@ void ProcessManager::Update()
             }
             default:
             {
-                Logger::Error("Invalid Pipe Message: " + std::to_string(msg.Type));
+                Logger::Error("Invalid Pipe Message: " + std::to_string(msg.Type) + " " + std::to_string(msg.Length));
 
                 break;
             }
