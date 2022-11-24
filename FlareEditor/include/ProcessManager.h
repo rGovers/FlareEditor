@@ -18,6 +18,12 @@ private:
     uint32_t m_width;
     uint32_t m_height;
 
+    int      m_frames;
+    double   m_time;
+
+    double   m_frameTime;
+    double   m_fps;
+
     GLuint   m_tex;
 
     PipeMessage RecieveMessage() const;
@@ -46,6 +52,15 @@ public:
     inline uint32_t GetHeight()
     {
         return m_height;
+    }
+
+    inline double GetFPS() const
+    {
+        return m_fps;
+    }
+    inline double GetFrameTime() const
+    {
+        return m_frameTime;
     }
 
     void SetSize(uint32_t a_width, uint32_t a_height);

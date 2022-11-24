@@ -12,11 +12,23 @@ cmake -DCMAKE_BUILD_TYPE=Debug -DGENERATE_CONFIG=ON ../../FlareEngine/cpp/
 echo
 make -j6
 echo
-msbuild ../../FlareEditorMonitor/FlareEditorMonitor.csproj
+echo "------------------------"
+echo
+echo "Building Editor CS"
+echo
+echo "------------------------"
+echo
+../../FlareEngine/deps/mono/build/bin/xbuild ../../FlareEditorBuildEngine/FlareEditorBuildEngine.csproj
+echo
+../../FlareEngine/deps/mono/build/bin/xbuild ../../FlareEditorCS/FlareEditorCS.csproj
 cd ..
 mv build/FlareNative FlareNative
-mv ../FlareEditorMonitor/bin/FlareCS.exe FlareCS.dll
-mv ../FlareEditorMonitor/bin/FlareEditorMonitor.dll FlareEditorMonitor.dll
+mv ../FlareEditorBuildEngine/bin/*.dll .
+mv ../FlareEditorCS/bin/FlareCS.exe FlareCS.dll
+mv ../FlareEditorCS/bin/FlareEditorCS.dll FlareEditorCS.dll
+cp -r ../FlareEngine/deps/mono/build/lib .
+cp -r ../FlareEngine/deps/mono/build/etc .
+echo
 echo "------------------------"
 echo
 echo "Building Editor"

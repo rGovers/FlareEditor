@@ -82,6 +82,9 @@ ProcessManager::ProcessManager()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    m_frames = 0;
+    m_time = 0.0;
 }   
 ProcessManager::~ProcessManager()
 {
@@ -214,8 +217,6 @@ void ProcessManager::Update()
     fds.fd = m_pipeSock;
     fds.events = POLLIN;
 
-    bool set = false;
-
     while (poll(&fds, 1, 1) > 0)
     {
         if (fds.revents & (POLLNVAL | POLLERR | POLLHUP))
@@ -233,12 +234,28 @@ void ProcessManager::Update()
             {
             case PipeMessageType_PushFrame:
             {
-                if (msg.Length == m_width * m_height * 4 && !set)
+                if (msg.Length == m_width * m_height * 4)
                 {
                     glBindTexture(GL_TEXTURE_2D, m_tex);
                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, msg.Data);
+                }
 
-                    set = true;
+                break;
+            }
+            case PipeMessageType_FrameData:
+            {
+                const double delta = *(double*)(msg.Data + 0);
+                const double time = *(double*)(msg.Data + 4);
+
+                ++m_frames;
+
+                m_frameTime = delta;
+                m_time -= delta;
+                if (m_time <= 0)
+                {
+                    m_fps = m_frames * 2;
+                    m_time += 0.5;
+                    m_frames = 0;
                 }
 
                 break;
@@ -288,13 +305,23 @@ void ProcessManager::Update()
         }
     }
 
+    // Engine only pushes one frame at a time
+    // Do it this way so the editor does not get overwhelmed with frame data
+    // Cause extreme lag if I do not throttle the push frames ~1 fps
+    // IPCs are only so fast
+    PipeMessage msg;
+    msg.Type = PipeMessageType_UnlockFrame;
+    msg.Length = 0;
+    msg.Data = nullptr;
+
+    PushMessage(msg);
+
     if (m_resize)
     {
         m_resize = false;
 
         glm::ivec2 size = glm::ivec2((int)m_width, (int)m_height);
 
-        PipeMessage msg;
         msg.Type = PipeMessageType_Resize;
         msg.Length = sizeof(glm::ivec2);
         msg.Data = (char*)&size;

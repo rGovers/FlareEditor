@@ -11,9 +11,7 @@ class Application
 {
 private:
     GLFWwindow* m_window;
-
-    std::string m_title;
-
+            
     uint32_t    m_width;
     uint32_t    m_height;
 
@@ -32,5 +30,7 @@ public:
         return m_window;
     }
 
-    void Close();
+    void SetTitle(const std::string_view& a_title) const;
+
+    void Close() const;
 };

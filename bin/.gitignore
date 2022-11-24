@@ -1,6 +1,8 @@
 *.dll
 *.pdb
 *.exe
+etc/
+lib/
 FlareNative
 imgui.ini
 mono_crash*

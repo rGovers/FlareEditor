@@ -1,8 +1,8 @@
 #!/bin/bash
 
 rm -rf build
-rm -rf FlareEditorMonitor/bin
-rm -rf FlareEditorMonitor/obj
+rm -rf FlareEditorCS/bin
+rm -rf FlareEditorCS/obj
 rm -rf bin/build
-rm -f bin/FlareCS.dll
-rm -f bin/FlareEditorMonitor.dll
+rm -f bin/*.dll
+rm -f bin/FlareNative

@@ -26,7 +26,7 @@ Application::Application(uint32_t a_width, uint32_t a_height, const std::string_
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 4);
 
-    m_window = glfwCreateWindow((int)m_width, (int)m_height, a_title.begin(), NULL, NULL);
+    m_window = glfwCreateWindow((int)m_width, (int)m_height, a_title.data(), NULL, NULL);
 
     if (!m_window)
     {
@@ -75,7 +75,12 @@ void Application::Run()
     }
 }
 
-void Application::Close()
+void Application::SetTitle(const std::string_view& a_title) const
+{
+    glfwSetWindowTitle(m_window, a_title.data());
+}
+
+void Application::Close() const
 {
     glfwSetWindowShouldClose(m_window, GLFW_TRUE);
 }
