@@ -12,6 +12,15 @@ namespace FlareEditor.BuildEngine
             string cacheDir = Path.Combine(a_path, ".cache");
             string projectDir = Path.Combine(a_path, "Project");
 
+            if (!Directory.Exists(cacheDir))
+            {
+                Directory.CreateDirectory(cacheDir);
+            }
+            if (!Directory.Exists(projectDir))
+            {
+                Directory.CreateDirectory(projectDir);
+            }
+
             string editorProjectName = a_name + "Editor";
 
             string projectPath = Path.Combine(cacheDir, a_name + ".csproj");

@@ -1,12 +1,14 @@
 #include "Windows/ControlWindow.h"
 
-#include <imgui.h>
-
+#include "FlareImGui.h"
 #include "ProcessManager.h"
+#include "Project.h"
 
-ControlWindow::ControlWindow(ProcessManager* a_processManager) : Window("Control")
+ControlWindow::ControlWindow(ProcessManager* a_processManager, Project* a_project) : Window("Control")
 {
     m_processManager = a_processManager;
+
+    m_project = a_project;
 }
 ControlWindow::~ControlWindow()
 {
@@ -15,18 +17,16 @@ ControlWindow::~ControlWindow()
 
 void ControlWindow::Update()
 {
-    if (m_processManager->IsRunning())
+    bool running = m_processManager->IsRunning();
+    if (FlareImGui::ImageSwitchButton("Run Engine", "Textures/Icons/Controls_Stop.png", "Textures/Icons/Controls_Play.png", &running, glm::vec2(32.0f)))
     {
-        if (ImGui::Button("Stop"))
+        if (running)
+        {
+            m_processManager->Start(m_project->GetCachePath());
+        }
+        else
         {
             m_processManager->Stop();
-        }
-    }
-    else
-    {
-        if (ImGui::Button("Start"))
-        {
-            m_processManager->Start();
         }
     }
 }

@@ -60,6 +60,12 @@ void Project::NewCallback(const std::string_view& a_path, const std::string_view
         std::filesystem::create_directories(projectDir);
     }
 
+    const std::string sceneDir = projectDir + "/Scenes";
+    if (!std::filesystem::exists(sceneDir))
+    {
+        std::filesystem::create_directories(sceneDir);
+    }
+
     const std::string cacheDir = m_path + "/.cache";
     if (!std::filesystem::exists(cacheDir))
     {

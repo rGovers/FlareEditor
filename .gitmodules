@@ -13,3 +13,6 @@
 [submodule "FlareEditor/lib/tinyxml2"]
 	path = FlareEditor/lib/tinyxml2
 	url = https://github.com/leethomason/tinyxml2.git
+[submodule "FlareEditor/lib/stb"]
+	path = FlareEditor/lib/stb
+	url = https://github.com/nothings/stb.git

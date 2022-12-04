@@ -29,7 +29,16 @@ public:
         return m_name;
     }
 
-    inline bool ValidProject() const
+    inline std::string GetCachePath() const
+    {
+        return m_path + "/.cache";
+    }
+    inline std::string GetProjectPath() const
+    {
+        return m_path + "/Project";
+    }
+
+    inline bool IsValidProject() const
     {
         return !m_path.empty() && !m_name.empty();
     }

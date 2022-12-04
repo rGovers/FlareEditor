@@ -6,10 +6,14 @@
 #include <string>
 #include <sstream>
 
+#include "AssetLibrary.h"
+#include "Datastore.h"
+#include "FileHandler.h"
 #include "Modals/CreateProjectModal.h"
 #include "ProcessManager.h"
 #include "Project.h"
 #include "RuntimeManager.h"
+#include "Windows/AssetBrowserWindow.h"
 #include "Windows/ConsoleWindow.h"
 #include "Windows/ControlWindow.h"
 #include "Windows/EditorWindow.h"
@@ -83,6 +87,23 @@ static void GLAPIENTRY MessageCallback
     }
 }
 
+static void SetImguiStyle()
+{
+    ImGui::StyleColorsDark();
+
+    ImGuiStyle& style = ImGui::GetStyle();
+
+    style.FrameRounding = 4.0f;
+    style.WindowRounding = 6.0f;
+    style.WindowBorderSize = 0.0f;
+    style.ChildBorderSize = 0.0f;
+    style.PopupBorderSize = 0.0f;
+    style.WindowMenuButtonPosition = ImGuiDir_Right;
+
+    ImVec4* colors = style.Colors;
+    // colors[ImGuiCol_WindowBg]               = ImVec4(0.00f, 0.00f, 0.06f, 0.94f);
+}
+
 AppMain::AppMain() : Application(1280, 720, "FlareEditor")
 {
     IMGUI_CHECKVERSION();
@@ -98,7 +119,7 @@ AppMain::AppMain() : Application(1280, 720, "FlareEditor")
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
-    ImGui::StyleColorsDark();
+    SetImguiStyle();
 
     if (!ImGui_ImplGlfw_InitForOpenGL(GetWindow(), true))
 	{
@@ -109,15 +130,21 @@ AppMain::AppMain() : Application(1280, 720, "FlareEditor")
 		assert(0);
 	}
 
+    Datastore::Init();
+    FileHandler::Init();
+
     m_process = new ProcessManager();
     m_runtime = new RuntimeManager();
 
     m_project = new Project(this);
 
+    m_assets = new AssetLibrary();
+
     m_windows.emplace_back(new ConsoleWindow());
-    m_windows.emplace_back(new ControlWindow(m_process));
+    m_windows.emplace_back(new ControlWindow(m_process, m_project));
     m_windows.emplace_back(new EditorWindow());
     m_windows.emplace_back(new GameWindow(m_process));
+    m_windows.emplace_back(new AssetBrowserWindow(m_project));
 
     m_titleSet = 0.0;
     m_refresh = false;
@@ -125,6 +152,8 @@ AppMain::AppMain() : Application(1280, 720, "FlareEditor")
 AppMain::~AppMain()
 {
     delete m_project;
+
+    delete m_assets;
 
     if (m_process->IsRunning())
     {
@@ -144,6 +173,9 @@ AppMain::~AppMain()
     delete m_process;
     delete m_runtime;
 
+    FileHandler::Destroy();
+    Datastore::Destroy();
+
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -155,11 +187,21 @@ void AppMain::Update(double a_delta, double a_time)
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    ImGuiIO& io = ImGui::GetIO();
+    const ImGuiIO& io = ImGui::GetIO();
 
-    std::string title = "FlareEngine";
+    std::string title = "FlareEditor";
 
-    if (m_project->ValidProject())
+    const int focusState = glfwGetWindowAttrib(GetWindow(), GLFW_FOCUSED);
+    if (!m_focused && focusState)
+    {
+        m_refresh = true;
+    }
+
+    m_focused = (bool)focusState;
+
+    const bool validProject = m_project->IsValidProject();
+
+    if (validProject)
     {
         title += " [" + std::string(m_project->GetName()) + "]";
     }
@@ -218,7 +260,7 @@ void AppMain::Update(double a_delta, double a_time)
 
                 if (ImGui::MenuItem("Control"))
                 {
-                    m_windows.emplace_back(new ControlWindow(m_process));
+                    m_windows.emplace_back(new ControlWindow(m_process, m_project));
                 }
 
                 if (ImGui::MenuItem("Console"))
@@ -234,16 +276,19 @@ void AppMain::Update(double a_delta, double a_time)
     }
     ImGui::EndMainMenuBar();
 
-    for (auto iter = m_windows.begin(); iter != m_windows.end(); ++iter)
+    if (validProject)
     {
-        if (!(*iter)->Display())
+        for (auto iter = m_windows.begin(); iter != m_windows.end(); ++iter)
         {
-            delete *iter;
-            iter = m_windows.erase(iter);
-
-            if (iter == m_windows.end())
+            if (!(*iter)->Display())
             {
-                break;
+                delete *iter;
+                iter = m_windows.erase(iter);
+
+                if (iter == m_windows.end())
+                {
+                    break;
+                }
             }
         }
     }
@@ -271,10 +316,17 @@ void AppMain::Update(double a_delta, double a_time)
         ImGui::RenderPlatformWindowsDefault();
     }
 
-    if (m_refresh && m_project->ValidProject())
+    if (m_refresh && validProject)
     {
         Logger::Message("Refreshing Project");
         m_refresh = false;
+
+        m_assets->Refresh();
+
+        for (Window* wind : m_windows)
+        {
+            wind->Refresh();
+        }
 
         m_runtime->Build(m_project->GetPath(), m_project->GetName());
     }

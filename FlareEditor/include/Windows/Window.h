@@ -18,5 +18,6 @@ public:
 
     bool Display();
 
+    virtual void Refresh() { }
     virtual void Update() = 0;
 };

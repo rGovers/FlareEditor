@@ -35,6 +35,7 @@ include_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/cpp/Headless/"
                     "${PROJECT_SOURCE_DIR}/lib/glm/"
                     "${PROJECT_SOURCE_DIR}/lib/imgui/"
                     "${PROJECT_SOURCE_DIR}/lib/imgui/backends/"
+                    "${PROJECT_SOURCE_DIR}/lib/stb/"
                     "${PROJECT_SOURCE_DIR}/lib/tinyxml2/")
 
 file(GLOB SOURCES "src/*.cpp" "lib/glad/src/*.c" "lib/imgui/*.cpp" "lib/imgui/backends/imgui_impl_opengl3.cpp" "lib/imgui/backends/imgui_impl_glfw.cpp" "lib/tinyxml2/tinyxml2.cpp")

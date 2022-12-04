@@ -128,7 +128,7 @@ void ProcessManager::PushMessage(const PipeMessage& a_message) const
     }
 }
 
-bool ProcessManager::Start()
+bool ProcessManager::Start(const std::string_view& a_workingDir)
 {
     Logger::Message("Spawning FlareEngine Instance");
     if (m_process == -1)
@@ -150,7 +150,8 @@ bool ProcessManager::Start()
         else if (m_process == 0)
         {
             // Starting the engine
-            execl("./FlareNative", "--headless", "--testB", nullptr);
+            const std::string workingDirArg = "--wDir=" + std::string(a_workingDir);
+            execl("./FlareNative", "--headless", workingDirArg.c_str(), nullptr);
         }
         else
         {

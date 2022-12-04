@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <glad/glad.h>
+#include <string_view>
 
 class ProcessManager
 {
@@ -65,7 +66,7 @@ public:
 
     void SetSize(uint32_t a_width, uint32_t a_height);
 
-    bool Start();
+    bool Start(const std::string_view& a_workingDir);
     void Update();
     void Stop();
 };

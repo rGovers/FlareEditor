@@ -3,6 +3,9 @@
 #define GLM_FORCE_SWIZZLE 
 #include <glm/glm.hpp>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include <string>
 
 #include "AppMain.h"
