@@ -157,24 +157,33 @@ PipeMessage ProcessManager::ReceiveMessage() const
     PipeMessage msg;
 
 #if WIN32
-    const uint32_t size = (uint32_t)recv(m_pipeSock, (char*)&msg, PipeMessage::Size, 0);
-    if (size >= 8)
+    const int size = recv(m_pipeSock, (char*)&msg, PipeMessage::Size, 0);
+    if (size == SOCKET_ERROR)
+    {
+        Logger::Error("Connection Error: " + std::to_string(WSAGetLastError()));
+    }
+    if (size >= PipeMessage::Size)
     {
         msg.Data = new char[msg.Length];
         char* dataBuffer = msg.Data;
         uint32_t len = (uint32_t)(dataBuffer - msg.Data);
         while (len < msg.Length)
         {
-            dataBuffer += recv(m_pipeSock, dataBuffer, (int)(msg.Length - len), 0);
+            const int ret = recv(m_pipeSock, dataBuffer, (int)(msg.Length - len), 0);
+            if (ret != SOCKET_ERROR)
+            {
+                dataBuffer += ret;
 
-            len = (uint32_t)(dataBuffer - msg.Data);
+                len = (uint32_t)(dataBuffer - msg.Data);
+            }
+
         }
 
         return msg;
     }
 #else
     const uint32_t size = (uint32_t)read(m_pipeSock, &msg, PipeMessage::Size);
-    if (size >= 8)
+    if (size >= PipeMessage::Size)
     {
         msg.Data = new char[msg.Length];
         char* dataBuffer = msg.Data;
@@ -413,9 +422,21 @@ void ProcessManager::PollMessage()
 
         break;
     }
+    case PipeMessageType_Null:
+    {
+        Logger::Warning("Editor: Null Message");
+
+        if (m_pipeSock != INVALID_SOCKET)
+        {
+            closesocket(m_pipeSock);
+            m_pipeSock = INVALID_SOCKET;
+        }
+
+        break;
+    }
     default:
     {
-        Logger::Error("Invalid Pipe Message: " + std::to_string(msg.Type) + " " + std::to_string(msg.Length));
+        Logger::Error("Editor: Invalid Pipe Message: " + std::to_string(msg.Type) + " " + std::to_string(msg.Length));
 
         break;
     }
@@ -489,15 +510,19 @@ void ProcessManager::Stop()
     PushMessage({ PipeMessageType_Close });
 
 #if WIN32
-    closesocket(m_pipeSock);
+    if (m_pipeSock != INVALID_SOCKET)
+    {
+        closesocket(m_pipeSock);
+        m_pipeSock = INVALID_SOCKET;
+    }
     m_processInfo.hProcess = INVALID_HANDLE_VALUE;
     m_processInfo.hThread = INVALID_HANDLE_VALUE;
 #else
     close(m_pipeSock);
     m_process = -1;
+    m_pipeSock = -1;
 #endif
     
-    m_pipeSock = -1;
 }
 void ProcessManager::SetSize(uint32_t a_width, uint32_t a_height)
 {

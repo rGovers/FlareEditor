@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -74,10 +75,10 @@ namespace FlareEditor.BuildEngine
             XmlElement propertyGroup = doc.CreateElement("PropertyGroup");
             root.AppendChild(propertyGroup);
 
-            XmlElement configuationProperty = doc.CreateElement("Configuration");
-            propertyGroup.AppendChild(configuationProperty);
-            configuationProperty.SetAttribute("Condition", "'$(Configuration)' == ''");
-            configuationProperty.InnerText = "Debug";
+            XmlElement configurationProperty = doc.CreateElement("Configuration");
+            propertyGroup.AppendChild(configurationProperty);
+            configurationProperty.SetAttribute("Condition", "'$(Configuration)' == ''");
+            configurationProperty.InnerText = "Debug";
 
             XmlElement outputProperty = doc.CreateElement("OutputPath");
             propertyGroup.AppendChild(outputProperty);
@@ -140,7 +141,26 @@ namespace FlareEditor.BuildEngine
                 {
                     XmlElement compileSource = doc.CreateElement("Compile");
                     compileItemGroup.AppendChild(compileSource);
-                    compileSource.SetAttribute("Include", Path.Combine("../Project/", source));
+                    
+                    // Slashes once again find a way to make my life a pain
+                    switch (Environment.OSVersion.Platform)
+                    { 
+                    case PlatformID.Win32S:
+                    case PlatformID.Win32Windows:
+                    case PlatformID.Win32NT:
+                    case PlatformID.WinCE:
+                    {
+                        compileSource.SetAttribute("Include", Path.Combine("..\\Project\\", source));
+                        
+                        break;
+                    }
+                    default:
+                    {
+                        compileSource.SetAttribute("Include", Path.Combine("../Project/", source));
+                        
+                        break;
+                    }
+                    }
                 }
             }
 
@@ -165,7 +185,7 @@ namespace FlareEditor.BuildEngine
 
                         XmlElement hintPath = doc.CreateElement("HintPath");
                         reference.AppendChild(hintPath);
-                        hintPath.InnerText = Path.Combine(dir, "FlareCS.dll");
+                        hintPath.InnerText = Path.Combine(dir ?? string.Empty, "FlareCS.dll");
 
                         XmlElement priv = doc.CreateElement("Private");
                         reference.AppendChild(priv);
@@ -182,7 +202,7 @@ namespace FlareEditor.BuildEngine
 
                         XmlElement hintPath = doc.CreateElement("HintPath");
                         reference.AppendChild(hintPath);
-                        hintPath.InnerText = Path.Combine(dir, "FlareEditorCS.dll");
+                        hintPath.InnerText = Path.Combine(dir ?? string.Empty, "FlareEditorCS.dll");
 
                         XmlElement priv = doc.CreateElement("Private");
                         reference.AppendChild(priv);
