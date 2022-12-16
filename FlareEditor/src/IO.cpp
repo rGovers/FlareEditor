@@ -1,8 +1,15 @@
 #include "IO.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
-std::string_view IO::GetHomePath()
+std::string IO::GetHomePath()
 {
-    return getenv("HOME");
+#if WIN32
+    const std::string homePath = std::getenv("HOMEPATH");
+    const std::string homeDrive = std::getenv("HOMEDRIVE");
+
+    return homeDrive + homePath;
+#else
+    return std::getenv("HOME");
+#endif
 }

@@ -8,7 +8,7 @@
 
 #include "Logger.h"
 
-static void Logger_PushMessage(MonoString* a_string)
+FLARE_MONO_EXPORT(void, Logger_PushMessage, MonoString* a_string)
 {
     char* str = mono_string_to_utf8(a_string);
 
@@ -16,7 +16,7 @@ static void Logger_PushMessage(MonoString* a_string)
 
     mono_free(str);
 }
-static void Logger_PushWarning(MonoString* a_string)
+FLARE_MONO_EXPORT(void, Logger_PushWarning, MonoString* a_string)
 {
     char* str = mono_string_to_utf8(a_string);
 
@@ -24,7 +24,7 @@ static void Logger_PushWarning(MonoString* a_string)
 
     mono_free(str);
 }
-static void Logger_PushError(MonoString* a_string)
+FLARE_MONO_EXPORT(void, Logger_PushError, MonoString* a_string)
 {
     char* str = mono_string_to_utf8(a_string);
 
@@ -65,6 +65,8 @@ RuntimeManager::~RuntimeManager()
 
 bool RuntimeManager::Build(const std::string_view& a_path, const std::string_view& a_name)
 {
+    mono_domain_set(m_buildDomain, 0);
+
     const std::chrono::time_point startTime = std::chrono::high_resolution_clock::now();
 
     MonoString* pathString = mono_string_new(m_buildDomain, a_path.data());
@@ -75,7 +77,7 @@ bool RuntimeManager::Build(const std::string_view& a_path, const std::string_vie
     args[1] = nameString;
 
     MonoObject* retVal = mono_runtime_invoke(m_buildMethod, NULL, args, NULL);
-    const mono_bool retValBool = *(bool*)mono_object_unbox(retVal);
+    const mono_bool retValBool = *(mono_bool*)mono_object_unbox(retVal);
 
     if (retValBool == 0)
     {
@@ -95,5 +97,5 @@ bool RuntimeManager::Build(const std::string_view& a_path, const std::string_vie
 
 bool RuntimeManager::Start()
 {
-    
+    return true;
 }

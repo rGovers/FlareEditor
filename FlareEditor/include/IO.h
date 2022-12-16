@@ -9,5 +9,5 @@ private:
 protected:
 
 public:
-    static std::string_view GetHomePath();
+    static std::string GetHomePath();
 };

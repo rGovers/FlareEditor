@@ -4,6 +4,12 @@
 #include <mono/metadata/assembly.h>
 #include <string_view>
 
+#if WIN32
+#define FLARE_MONO_EXPORT(ret, func, args) __declspec(dllexport) ret func(args)
+#else
+#define FLARE_MONO_EXPORT(ret, func, args) static ret func(args)
+#endif
+
 class RuntimeManager
 {
 private:
