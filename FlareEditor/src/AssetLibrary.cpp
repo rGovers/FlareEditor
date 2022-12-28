@@ -134,7 +134,21 @@ void AssetLibrary::BuildDirectory(const std::string_view& a_path) const
         }
         case AssetType_Other:
         {
-            Logger::Error("Other Asset Building Not Implemented");
+            const std::filesystem::path p = std::filesystem::path(a_path) / "Core" / "Assets" / asset.Path;
+
+            std::filesystem::create_directories(p.parent_path());
+            
+            std::ofstream file = std::ofstream(p, std::ios_base::binary);
+            if (file.good() && file.is_open())
+            {
+                file.write(asset.Data, asset.Size);
+
+                file.close();
+            }
+            else
+            {
+                Logger::Warning("Failed writing asset: " + p.string());
+            }
 
             break;
         }

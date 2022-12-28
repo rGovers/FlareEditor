@@ -8,6 +8,8 @@ FileHandler* FileHandler::Instance = nullptr;
 FileHandler::FileHandler()
 {
     m_extTex.emplace(".cs", Datastore::GetTexture("Textures/FileIcons/FileIcon_CSharpScript.png"));
+    m_extTex.emplace(".frag", Datastore::GetTexture("Textures/FileIcons/FileIcon_GLFrag.png"));
+    m_extTex.emplace(".vert", Datastore::GetTexture("Textures/FileIcons/FileIcon_GLVert.png"));
 }
 FileHandler::~FileHandler()
 {

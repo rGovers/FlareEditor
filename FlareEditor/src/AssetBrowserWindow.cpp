@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <imgui.h>
 
+#include "Datastore.h"
 #include "FileHandler.h"
 #include "FlareImGui.h"
 #include "Logger.h"
@@ -149,6 +150,9 @@ void AssetBrowserWindow::Update()
 
         ImGui::Columns(glm::max(1, (int)(width / (ItemWidth + 8.0f))));
 
+        Texture* folderTex = Datastore::GetTexture("Textures/FileIcons/FileIcon_Folder.png");
+        Texture* emptyFolderTex = Datastore::GetTexture("Textures/FileIcons/FileIcon_FolderEmpty.png");
+
         for (uint32_t index : node.Children)
         {
             const DirectoryNode& cNode = m_fileTree[index];
@@ -158,7 +162,14 @@ void AssetBrowserWindow::Update()
             
             const std::string fileName = p.filename().string();
 
-            FlareImGui::ImageButton(fileName + "_DirImage", "Textures/FileIcons/FileIcon_Folder.png", glm::vec2(ItemWidth), false);
+            Texture* tex = folderTex;
+
+            if (std::filesystem::is_empty(p))
+            {
+                tex = emptyFolderTex;
+            }
+
+            FlareImGui::ImageButton(tex, glm::vec2(ItemWidth), false);
             if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
             {
                 m_curIndex = index;
