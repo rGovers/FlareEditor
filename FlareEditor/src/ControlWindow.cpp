@@ -1,11 +1,17 @@
 #include "Windows/ControlWindow.h"
 
+#include "AppMain.h"
 #include "FlareImGui.h"
+#include "Modals/ErrorModal.h"
 #include "ProcessManager.h"
 #include "Project.h"
+#include "RuntimeManager.h"
 
-ControlWindow::ControlWindow(ProcessManager* a_processManager, Project* a_project) : Window("Control")
+ControlWindow::ControlWindow(AppMain* a_app, ProcessManager* a_processManager, RuntimeManager* a_runtimeManager, Project* a_project) : Window("Control")
 {
+    m_app = a_app;
+
+    m_runtimeManager = a_runtimeManager;
     m_processManager = a_processManager;
 
     m_project = a_project;
@@ -22,6 +28,13 @@ void ControlWindow::Update()
     {
         if (running)
         {
+            if (!m_runtimeManager->IsBuilt())
+            {
+                m_app->PushModal(new ErrorModal("Cannot start with build errors"));
+
+                return;
+            }
+
             m_processManager->Start(m_project->GetCachePath());
         }
         else

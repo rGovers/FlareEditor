@@ -17,7 +17,7 @@ namespace FlareEditor.BuildEngine
             string[] files = Directory.GetFiles(a_dir);
             foreach (string file in files)
             {
-                if (Path.HasExtension(".cs"))
+                if (Path.GetExtension(file) == ".cs")
                 {
                     a_files.Add(Path.Combine(a_wDir, Path.GetFileName(file)));
                 }

@@ -91,5 +91,5 @@ void Project::New()
 {
     Logger::Message("New Project");
 
-    m_app->PushModal(new CreateProjectModal(std::bind(&Project::NewCallback, this, std::placeholders::_1, std::placeholders::_2)));
+    m_app->PushModal(new CreateProjectModal(m_app, std::bind(&Project::NewCallback, this, std::placeholders::_1, std::placeholders::_2)));
 }

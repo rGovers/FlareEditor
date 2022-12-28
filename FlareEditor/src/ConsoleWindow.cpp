@@ -2,7 +2,9 @@
 
 #include <imgui.h>
 
+#include "Datastore.h"
 #include "Logger.h"
+#include "Texture.h"
 
 ConsoleWindow::ConsoleWindow() : Window("Console")
 {
@@ -107,11 +109,17 @@ void ConsoleWindow::Update()
         }
     }
 
+    const Texture* infoTex = Datastore::GetTexture("Textures/Icons/Console_Info.png");
+    const Texture* warningTex = Datastore::GetTexture("Textures/Icons/Console_Warning.png");
+    const Texture* errorTex = Datastore::GetTexture("Textures/Icons/Console_Error.png");
+
     ImGui::BeginChild("##Messages");
     for (const ConsoleMessage msg : m_messages)
     {
         ImVec4 color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
         bool display = displayMessage;
+
+        const Texture* tex = infoTex;
 
         switch (msg.Type)
         {
@@ -120,12 +128,16 @@ void ConsoleWindow::Update()
             color = ImVec4(1.0, 0.0f, 0.0f, 1.0f);
             display = displayError;
 
+            tex = errorTex;
+
             break;
         }
         case LoggerMessageType_Warning:
         {   
             color = ImVec4(1.0, 1.0f, 0.0f, 1.0f);
             display = displayWarning;
+
+            tex = warningTex;
 
             break;
         }
@@ -144,12 +156,24 @@ void ConsoleWindow::Update()
                     ImGui::SameLine();
                 }
 
+                if (tex != nullptr)
+                {
+                    ImGui::Image((ImTextureID)tex->GetHandle(), { 16, 16 });
+                    ImGui::SameLine();
+                }
+
                 ImGui::TextColored(color, msg.Message.c_str());
             }
             else
             {
                 for (uint32_t i = 0; i < msg.Count; ++i)
                 {
+                    if (tex != nullptr)
+                    {
+                        ImGui::Image((ImTextureID)tex->GetHandle(), { 16, 16 });
+                        ImGui::SameLine();
+                    }
+
                     ImGui::TextColored(color, msg.Message.c_str());
                 }
             }

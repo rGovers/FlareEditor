@@ -3,12 +3,15 @@
 #include <imgui.h>
 #include <string.h>
 
+#include "AppMain.h"
 #include "FileDialog.h"
 #include "IO.h"
-#include "Logger.h"
+#include "Modals/ErrorModal.h"
 
-CreateProjectModal::CreateProjectModal(Callback a_callback) : Modal("Create Project", glm::vec2(640, 480))
+CreateProjectModal::CreateProjectModal(AppMain* a_app, Callback a_callback) : Modal("Create Project", glm::vec2(640, 480))
 {
+    m_app = a_app;
+
     m_callback = a_callback;
 
     m_path = IO::GetHomePath();
@@ -28,7 +31,7 @@ bool CreateProjectModal::Update()
     const uint32_t pathLen = (uint32_t)m_path.length();
     if (pathLen > BufferSize)
     {
-        Logger::Error("Path exceeds buffer size");
+        m_app->PushModal(new ErrorModal("Path exceeds buffer size"));
 
         m_path = IO::GetHomePath();
 
@@ -59,7 +62,7 @@ bool CreateProjectModal::Update()
     const uint32_t nameLen = (uint32_t)m_name.length();
     if (nameLen > BufferSize)
     {
-        Logger::Error("Name exceed buffer size");
+        m_app->PushModal(new ErrorModal("Name exceed buffer size"));
 
         m_name.clear();
 
@@ -95,7 +98,7 @@ bool CreateProjectModal::Update()
 
         if (m_name.empty())
         {
-            Logger::Error("Invalid Name");
+            m_app->PushModal(new ErrorModal("Invalid Name"));
 
             return true;
         }

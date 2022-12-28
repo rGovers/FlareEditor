@@ -19,6 +19,8 @@
 #include "Windows/EditorWindow.h"
 #include "Windows/GameWindow.h"
 
+#include "Modals/ErrorModal.h"
+
 static void GLAPIENTRY MessageCallback
 ( 
     GLenum a_source,
@@ -141,7 +143,7 @@ AppMain::AppMain() : Application(1280, 720, "FlareEditor")
     m_assets = new AssetLibrary();
 
     m_windows.emplace_back(new ConsoleWindow());
-    m_windows.emplace_back(new ControlWindow(m_process, m_project));
+    m_windows.emplace_back(new ControlWindow(this, m_process, m_runtime, m_project));
     m_windows.emplace_back(new EditorWindow());
     m_windows.emplace_back(new GameWindow(m_process));
     m_windows.emplace_back(new AssetBrowserWindow(m_project));
@@ -260,7 +262,7 @@ void AppMain::Update(double a_delta, double a_time)
 
                 if (ImGui::MenuItem("Control"))
                 {
-                    m_windows.emplace_back(new ControlWindow(m_process, m_project));
+                    m_windows.emplace_back(new ControlWindow(this, m_process, m_runtime, m_project));
                 }
 
                 if (ImGui::MenuItem("Console"))
@@ -293,19 +295,18 @@ void AppMain::Update(double a_delta, double a_time)
         }
     }
     
-    for (auto iter = m_modals.begin(); iter != m_modals.end(); ++iter)
+    if (!m_modals.empty())
     {
-        if (!(*iter)->Display())
-        {
-            delete *iter;
-            iter = m_modals.erase(iter);
+        Modal* modal = m_modals[m_modals.size() - 1];
 
-            if (iter == m_modals.end())
-            {
-                break;
-            }
+        if (!modal->Display())
+        {
+            delete modal;
+            m_modals.pop_back();
         }
     }
+
+    m_runtime->Update();
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -321,14 +322,20 @@ void AppMain::Update(double a_delta, double a_time)
         Logger::Message("Refreshing Project");
         m_refresh = false;
 
-        m_assets->Refresh();
+        const std::string path = std::string(m_project->GetPath()); 
+
+        m_assets->Refresh(path);
+        m_assets->BuildDirectory(path + "/.cache");
 
         for (Window* wind : m_windows)
         {
             wind->Refresh();
         }
 
-        m_runtime->Build(m_project->GetPath(), m_project->GetName());
+        if (m_runtime->Build(path, m_project->GetName()))
+        {
+            m_runtime->Start();
+        }
     }
 
     const int fps = (int)(1.0 / a_delta);

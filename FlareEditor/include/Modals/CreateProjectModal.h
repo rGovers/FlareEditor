@@ -5,6 +5,8 @@
 #include <functional>
 #include <list>
 
+class AppMain;
+
 class CreateProjectModal : public Modal
 {
 public:
@@ -12,6 +14,8 @@ public:
 
 private:
     static constexpr uint32_t BufferSize = 4096;
+
+    AppMain*               m_app;
 
     std::string            m_path;
     std::string            m_name;
@@ -23,7 +27,7 @@ private:
 protected:
 
 public:
-    CreateProjectModal(Callback a_callback);
+    CreateProjectModal(AppMain* a_app, Callback a_callback);
     virtual ~CreateProjectModal();
 
     virtual bool Update();
