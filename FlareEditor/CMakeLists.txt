@@ -42,8 +42,18 @@ file(GLOB SOURCES "src/*.cpp" "lib/glad/src/*.c" "lib/imgui/*.cpp" "lib/imgui/ba
 
 add_subdirectory("lib/glfw")
 
+link_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/deps/mono/build/lib/")
+
 add_executable(FlareEditor ${SOURCES})
 target_link_libraries(FlareEditor glfw ${GLFW_LIBRARIES})
 
-link_directories(${CMAKE_SOURCE_DIR}/../FlareEngine/deps/mono/build/lib/)
-target_link_libraries(FlareEditor mono-2.0)
+if (WIN32)
+    target_link_libraries(FlareEditor wsock32 ws2_32)
+endif()
+
+if (MSVC)
+    target_link_libraries(FlareEditor mono-2.0-sgen)
+    set_property(TARGET FlareEditor PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+else()
+    target_link_libraries(FlareEditor mono-2.0)
+endif()

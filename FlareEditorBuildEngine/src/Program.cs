@@ -5,8 +5,15 @@ using System.Xml;
 
 namespace FlareEditor.BuildEngine
 {
-    public class Program
+    public static class Program
     {
+        // On Windows seems to need a main function and be executable to work
+        // Needs it even if it is not used for some odd reason
+        static void Main(string[] a_args)
+        {
+
+        }
+
         public static bool Build(string a_path, string a_name)
         {
             string cacheDir = Path.Combine(a_path, ".cache");
@@ -21,9 +28,9 @@ namespace FlareEditor.BuildEngine
                 Directory.CreateDirectory(projectDir);
             }
 
-            string editorProjectName = a_name + "Editor";
+            string editorProjectName = $"{a_name}Editor";
 
-            string projectPath = Path.Combine(cacheDir, a_name + ".csproj");
+            string projectPath = Path.Combine(cacheDir, $"{a_name}.csproj");
 
             XmlDocument projectDoc = null;
             XmlDocument editorProjectDoc = null;
@@ -39,7 +46,7 @@ namespace FlareEditor.BuildEngine
             if (editorProjectSources != null)
             {
                 editorProjectDoc = ProjectGenerator.GenerateProject("Editor", editorProjectName, editorProjectSources, new string[] { "System", "System.Xml", "FlareEngine", "FlareEditor" });
-                editorProjectDoc.Save(Path.Combine(cacheDir, editorProjectName + ".csproj"));
+                editorProjectDoc.Save(Path.Combine(cacheDir, $"{editorProjectName}.csproj"));
             }
 
             if (projectDoc != null)
@@ -51,7 +58,7 @@ namespace FlareEditor.BuildEngine
                     // Basically there is a fun interaction between the Mono runtime and the build engine that causes a crash
                     // Despite being deprecated it just works
                     // I am aware of the security risks of doing it as a process I just dont care anymore
-                    // Atleast it is not that big of a concern when you are able to execute arbitrary code
+                    // At-least it is not that big of a concern when you are able to execute arbitrary code
                     using (Process proc = new Process())
                     {
                         proc.StartInfo.UseShellExecute = false;

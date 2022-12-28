@@ -52,7 +52,7 @@ void Project::NewCallback(const std::string_view& a_path, const std::string_view
     versionElement->InsertEndChild(versionMinorElement);
     versionMinorElement->SetText(FLAREEDITOR_VERSION_MINOR);
 
-    doc.SaveFile(path.c_str());
+    doc.SaveFile(path.string().c_str());
 
     const std::string projectDir = m_path + "/Project";
     if (!std::filesystem::exists(projectDir))

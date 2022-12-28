@@ -3,44 +3,74 @@
 #define GLM_FORCE_SWIZZLE 
 #include <glm/glm.hpp>
 
-#include <assert.h>
-#include <cstdlib>
+#ifndef WIN32
 #include <poll.h>
 #include <signal.h>
-#include <string>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#endif
+
+#include <cassert>
+#include <cstdlib>
+#include <filesystem>
+#include <string>
 
 #include "Logger.h"
 
+static std::string GetAddr(const std::string_view& a_addr)
+{
+    return (std::filesystem::temp_directory_path() / a_addr).string();
+}
+
 ProcessManager::ProcessManager()
 {
-    m_process = -1;   
+    const std::string addrStr = GetAddr(PipeName);
+
+#if WIN32
+    m_pipeSock = INVALID_SOCKET;
+
+    ZeroMemory(&m_processInfo, sizeof(m_processInfo));
+    m_processInfo.hProcess = INVALID_HANDLE_VALUE;
+    m_processInfo.hThread = INVALID_HANDLE_VALUE;
+    
+    // Failsafe for unsafe close
+    DeleteFileA(addrStr.c_str());
+    
+    WSADATA wsaData = { };
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+    {
+        Logger::Error("Failed to start WSA");
+        assert(0);
+    }
+    
+    m_serverSock = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (m_serverSock == INVALID_SOCKET)
+    {
+        Logger::Error("Failed creating IPC");
+        perror("socket");
+        assert(0);
+    }
+    
+    sockaddr_un addr;
+    ZeroMemory(&addr, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    strcpy_s(addr.sun_path, addrStr.c_str());
+
+    if (bind(m_serverSock, (sockaddr*)&addr, sizeof(addr)) < 0)
+    {
+        Logger::Error("Failed binding IPC");
+        perror("bind");
+        assert(0);
+    }
+#else
     m_pipeSock = -1;
-
-    const char* tempDir = std::getenv("TMPDIR");
-    if (tempDir == nullptr)
-    {
-        tempDir = std::getenv("TMP");
-    }
-    if (tempDir == nullptr)
-    {
-        tempDir = std::getenv("TEMP");
-    }
-    if (tempDir == nullptr)
-    {
-        tempDir = std::getenv("XDG_RUNTIME_DIR");
-    }
-
-    assert(tempDir != nullptr);
-
-    const std::string addrStr = std::string(tempDir) + "/FlareEngine-IPC";
+    m_process = -1;   
 
     // Failsafe for unsafe close 
     // Frees the IPC from past instances
     unlink(addrStr.c_str());
-
+    
     m_serverSock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (m_serverSock < 0)
     {
@@ -48,7 +78,7 @@ ProcessManager::ProcessManager()
         perror("socket");
         assert(0);
     }
-
+    
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
@@ -60,7 +90,8 @@ ProcessManager::ProcessManager()
         perror("bind");
         assert(0);
     }
-
+#endif
+    
     if (listen(m_serverSock, 10) < 0)
     {
         Logger::Error("Failed setting IPC listen");
@@ -76,13 +107,15 @@ ProcessManager::ProcessManager()
     glGenTextures(1, &m_tex);
     glBindTexture(GL_TEXTURE_2D, m_tex);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)m_width, (GLsizei)m_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+    m_fps = 0.0;
+    m_frameTime = 0.0;
     m_frames = 0;
     m_time = 0.0;
 }   
@@ -90,47 +123,175 @@ ProcessManager::~ProcessManager()
 {
     glDeleteTextures(1, &m_tex);
 
+#if WIN32
+    closesocket(m_serverSock);
+
+    const std::string addrStr = GetAddr(PipeName);
+    
+    DeleteFileA(addrStr.c_str());
+    
+    WSACleanup();
+#else
     close(m_serverSock);
+#endif
 }
 
-PipeMessage ProcessManager::RecieveMessage() const
+#if WIN32
+void ProcessManager::DestroyProc()
+{
+    if (m_processInfo.hProcess != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(m_processInfo.hProcess);
+        m_processInfo.hProcess = INVALID_HANDLE_VALUE;
+    }
+    if (m_processInfo.hThread != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(m_processInfo.hThread);
+        m_processInfo.hThread = INVALID_HANDLE_VALUE;
+    }
+}
+#endif
+
+PipeMessage ProcessManager::ReceiveMessage() const
 {
     PipeMessage msg;
 
-    const uint32_t size = (uint32_t)read(m_pipeSock, &msg, PipeMessage::Size);
-    if (size >= 8)
+#if WIN32
+    const int size = recv(m_pipeSock, (char*)&msg, PipeMessage::Size, 0);
+    if (size == SOCKET_ERROR)
+    {
+        Logger::Error("Connection Error: " + std::to_string(WSAGetLastError()));
+    }
+    if (size >= PipeMessage::Size)
     {
         msg.Data = new char[msg.Length];
-        char* DataBuffer = msg.Data;
-        uint32_t len = DataBuffer - msg.Data;
+        char* dataBuffer = msg.Data;
+        uint32_t len = (uint32_t)(dataBuffer - msg.Data);
         while (len < msg.Length)
         {
-            DataBuffer += read(m_pipeSock, DataBuffer, msg.Length - len);
+            const int ret = recv(m_pipeSock, dataBuffer, (int)(msg.Length - len), 0);
+            if (ret != SOCKET_ERROR)
+            {
+                dataBuffer += ret;
 
-            len = DataBuffer - msg.Data;
+                len = (uint32_t)(dataBuffer - msg.Data);
+            }
+
         }
 
         return msg;
     }
+#else
+    const uint32_t size = (uint32_t)read(m_pipeSock, &msg, PipeMessage::Size);
+    if (size >= PipeMessage::Size)
+    {
+        msg.Data = new char[msg.Length];
+        char* dataBuffer = msg.Data;
+        uint32_t len = (uint32_t)(dataBuffer - msg.Data);
+        while (len < msg.Length)
+        {
+            dataBuffer += read(m_pipeSock, dataBuffer, msg.Length - len);
 
-    msg.Type = PipeMessageType_Null;
-    msg.Length = 0;
-    msg.Data = nullptr;
+            len = (uint32_t)(dataBuffer - msg.Data);
+        }
 
-    return msg;
+        return msg;
+    }
+#endif
+    
+    return PipeMessage();
 }
 void ProcessManager::PushMessage(const PipeMessage& a_message) const
 {
+#if WIN32
+    send(m_pipeSock, (const char*)&a_message, PipeMessage::Size, 0);
+    if (a_message.Data != nullptr)
+    {
+        send(m_pipeSock, a_message.Data, (int)a_message.Length, 0);
+    }
+#else
     write(m_pipeSock, &a_message, PipeMessage::Size);
     if (a_message.Data != nullptr)
     {
         write(m_pipeSock, a_message.Data, a_message.Length);
     }
+#endif
+}
+
+void ProcessManager::InitMessage() const
+{
+    Logger::Message("Connected to FlareEngine");
+
+    const glm::ivec2 data = glm::ivec2((int)m_width, (int)m_height);
+
+    PushMessage({ PipeMessageType_Resize, sizeof(glm::ivec2), (char*)&data });
 }
 
 bool ProcessManager::Start(const std::string_view& a_workingDir)
 {
     Logger::Message("Spawning FlareEngine Instance");
+
+    const std::string workingDirArg = "--wDir=" + std::string(a_workingDir);
+#if WIN32
+    const std::string args = "FlareNative.exe --headless " + workingDirArg;
+
+    STARTUPINFO si;
+    ZeroMemory(&si, sizeof(si));
+    ZeroMemory(&m_processInfo, sizeof(m_processInfo));
+
+    si.cb = sizeof(si);
+
+    const BOOL result = CreateProcess
+    (
+        "FlareNative.exe",
+        (LPSTR)args.c_str(),
+        NULL,
+        NULL,
+        FALSE,
+        0,
+        NULL,
+        NULL,
+        &si,
+        &m_processInfo
+    );
+    if (!result)
+    {
+        Logger::Error("Failed to spawn process: " + std::to_string(GetLastError()));
+    }
+    
+    timeval tv;
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
+
+    fd_set fdSet;
+    FD_ZERO(&fdSet);
+    FD_SET(m_serverSock, &fdSet);
+    if (select((int)(m_serverSock + 1), &fdSet, NULL, NULL, &tv) <= 0)
+    {
+        Logger::Error("Failed connecting to FlareEngine");
+
+        return false;
+    }
+
+    if (FD_ISSET(m_serverSock, &fdSet))
+    {
+        m_pipeSock = accept(m_serverSock, NULL, NULL);
+        if ((int)m_pipeSock < 0)
+        {
+            Logger::Error("Failed connecting to FlareEngine");
+
+            return false;
+        }
+
+        InitMessage();
+
+        return true;
+    }
+    
+    Logger::Error("Failed to start FlareEngine");
+
+    DestroyProc();
+#else
     if (m_process == -1)
     {
         // This is a bit odd leaving this here as a note
@@ -150,7 +311,6 @@ bool ProcessManager::Start(const std::string_view& a_workingDir)
         else if (m_process == 0)
         {
             // Starting the engine
-            const std::string workingDirArg = "--wDir=" + std::string(a_workingDir);
             execl("./FlareNative", "--headless", workingDirArg.c_str(), nullptr);
         }
         else
@@ -181,16 +341,7 @@ bool ProcessManager::Start(const std::string_view& a_workingDir)
                     return false;
                 }
 
-                Logger::Message("Connected to FlareEngine");
-
-                glm::ivec2 data = glm::ivec2((int)m_width, (int)m_height);
-
-                PipeMessage msg;
-                msg.Type = PipeMessageType_Resize;
-                msg.Length = sizeof(data);
-                msg.Data = (char*)&data;
-
-                PushMessage(msg);
+                InitMessage();
 
                 return true;
             }
@@ -200,20 +351,125 @@ bool ProcessManager::Start(const std::string_view& a_workingDir)
             kill(m_process, SIGTERM);
 
             m_process = -1;
-
-            return false;
         }
     }
+#endif
 
     return false;
 }
+
+void ProcessManager::PollMessage()
+{
+    const PipeMessage msg = ReceiveMessage();
+
+    switch (msg.Type)
+    {
+    case PipeMessageType_PushFrame:
+    {
+        if (msg.Length == m_width * m_height * 4)
+        {
+            glBindTexture(GL_TEXTURE_2D, m_tex);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)m_width, (GLsizei)m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, msg.Data);
+        }
+
+        break;
+    }
+    case PipeMessageType_FrameData:
+    {
+        const double delta = *(double*)(msg.Data + 0);
+        const double time = *(double*)(msg.Data + 4);
+
+        ++m_frames;
+
+        m_frameTime = delta;
+        m_time -= delta;
+        if (m_time <= 0)
+        {
+            m_fps = m_frames * 2;
+            m_time += 0.5;
+            m_frames = 0;
+        }
+
+        break;
+    }
+    case PipeMessageType_Message:
+    {
+        constexpr uint32_t TypeSize = sizeof(e_LoggerMessageType);
+
+        const std::string_view str = std::string_view(msg.Data + TypeSize, msg.Length - TypeSize);
+
+        switch (*(e_LoggerMessageType*)msg.Data)
+        {
+        case LoggerMessageType_Message:
+        {
+            Logger::Message(str);
+
+            break;
+        }
+        case LoggerMessageType_Warning:
+        {
+            Logger::Warning(str);
+
+            break;
+        }
+        case LoggerMessageType_Error:
+        {
+            Logger::Error(str);
+
+            break;
+        }
+        }
+
+        break;
+    }
+    case PipeMessageType_Null:
+    {
+        Logger::Warning("Editor: Null Message");
+
+#if WIN32
+        if (m_pipeSock != INVALID_SOCKET)
+        {
+            closesocket(m_pipeSock);
+            m_pipeSock = INVALID_SOCKET;
+        }
+#endif
+
+        break;
+    }
+    default:
+    {
+        Logger::Error("Editor: Invalid Pipe Message: " + std::to_string(msg.Type) + " " + std::to_string(msg.Length));
+
+        break;
+    }
+    }
+
+    if (msg.Data != nullptr)
+    {
+        delete[] msg.Data;
+    }
+}
+
 void ProcessManager::Update()
 {
-    if (m_pipeSock == -1 || m_process == -1)
+    if (!IsRunning())
     {
         return;
     }
 
+#if WIN32
+    timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 5;
+
+    fd_set fdSet;
+    FD_ZERO(&fdSet);
+    FD_SET(m_pipeSock, &fdSet);
+    if (select((int)(m_pipeSock + 1), &fdSet, NULL, NULL, &tv) > 0)
+    {
+        PollMessage();
+    }
+#else
     struct pollfd fds;
     fds.fd = m_pipeSock;
     fds.events = POLLIN;
@@ -229,120 +485,46 @@ void ProcessManager::Update()
 
         if (fds.revents & POLLIN)
         {
-            const PipeMessage msg = RecieveMessage();
-
-            switch (msg.Type)
-            {
-            case PipeMessageType_PushFrame:
-            {
-                if (msg.Length == m_width * m_height * 4)
-                {
-                    glBindTexture(GL_TEXTURE_2D, m_tex);
-                    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, msg.Data);
-                }
-
-                break;
-            }
-            case PipeMessageType_FrameData:
-            {
-                const double delta = *(double*)(msg.Data + 0);
-                const double time = *(double*)(msg.Data + 4);
-
-                ++m_frames;
-
-                m_frameTime = delta;
-                m_time -= delta;
-                if (m_time <= 0)
-                {
-                    m_fps = m_frames * 2;
-                    m_time += 0.5;
-                    m_frames = 0;
-                }
-
-                break;
-            }
-            case PipeMessageType_Message:
-            {
-                constexpr uint32_t TypeSize = sizeof(e_LoggerMessageType);
-
-                const std::string_view str = std::string_view(msg.Data + TypeSize, msg.Length - TypeSize);
-
-                switch (*(e_LoggerMessageType*)msg.Data)
-                {
-                case LoggerMessageType_Message:
-                {
-                    Logger::Message(str);
-
-                    break;
-                }
-                case LoggerMessageType_Warning:
-                {
-                    Logger::Warning(str);
-
-                    break;
-                }
-                case LoggerMessageType_Error:
-                {
-                    Logger::Error(str);
-
-                    break;
-                }
-                }
-
-                break;
-            }
-            default:
-            {
-                Logger::Error("Invalid Pipe Message: " + std::to_string(msg.Type) + " " + std::to_string(msg.Length));
-
-                break;
-            }
-            }
-            
-            if (msg.Data)
-            {
-                delete[] msg.Data;
-            }
+            PollMessage();
         }
     }
+#endif
 
     // Engine only pushes one frame at a time
     // Do it this way so the editor does not get overwhelmed with frame data
     // Cause extreme lag if I do not throttle the push frames ~1 fps
     // IPCs are only so fast
-    PipeMessage msg;
-    msg.Type = PipeMessageType_UnlockFrame;
-    msg.Length = 0;
-    msg.Data = nullptr;
-
-    PushMessage(msg);
+    PushMessage({ PipeMessageType_UnlockFrame });
 
     if (m_resize)
     {
         m_resize = false;
 
-        glm::ivec2 size = glm::ivec2((int)m_width, (int)m_height);
+        const glm::ivec2 size = glm::ivec2((int)m_width, (int)m_height);
 
-        msg.Type = PipeMessageType_Resize;
-        msg.Length = sizeof(glm::ivec2);
-        msg.Data = (char*)&size;
-
-        PushMessage(msg);
+        PushMessage({ PipeMessageType_Resize, sizeof(glm::ivec2), (char*)&size});
     }
 }
 void ProcessManager::Stop()
 {
     Logger::Message("Stopping FlareEngine Instance");
-    PipeMessage msg;
-    msg.Type = PipeMessageType_Close;
-    msg.Length = 0;
-    msg.Data = nullptr;
+    
+    PushMessage({ PipeMessageType_Close });
 
-    PushMessage(msg);
-
+#if WIN32
+    if (m_pipeSock != INVALID_SOCKET)
+    {
+        closesocket(m_pipeSock);
+        m_pipeSock = INVALID_SOCKET;
+    }
+    m_processInfo.hProcess = INVALID_HANDLE_VALUE;
+    m_processInfo.hThread = INVALID_HANDLE_VALUE;
+#else
     close(m_pipeSock);
-    m_pipeSock = -1;
     m_process = -1;
+    m_pipeSock = -1;
+#endif
+    
 }
 void ProcessManager::SetSize(uint32_t a_width, uint32_t a_height)
 {

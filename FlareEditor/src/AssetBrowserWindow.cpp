@@ -147,7 +147,7 @@ void AssetBrowserWindow::Update()
     {
         const float width = ImGui::GetWindowWidth();
 
-        ImGui::Columns((int)(width / (ItemWidth + 8.0f)));
+        ImGui::Columns(glm::max(1, (int)(width / (ItemWidth + 8.0f))));
 
         for (uint32_t index : node.Children)
         {
@@ -197,9 +197,9 @@ void AssetBrowserWindow::Update()
         }
 
         ImGui::Columns();
-
-        ImGui::EndChild();
     }
+
+    ImGui::EndChild();
 
     ImGui::EndGroup();
 }

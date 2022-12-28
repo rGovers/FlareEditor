@@ -2,6 +2,12 @@
 
 #include "PipeMessage.h"
 
+#if WIN32
+#include <WinSock2.h>
+#include <Windows.h>
+#include <afunix.h>
+#endif
+
 #include <cstdint>
 #include <glad/glad.h>
 #include <string_view>
@@ -9,27 +15,41 @@
 class ProcessManager
 {
 private:
-    int      m_process;
+    static constexpr std::string_view PipeName = "FlareEngine-IPC";
+
+#if WIN32
+    SOCKET              m_serverSock;
+    SOCKET              m_pipeSock;
+
+    PROCESS_INFORMATION m_processInfo;
+
+    void DestroyProc();
+#else
+    int                 m_process;
          
-    int      m_serverSock;
-    int      m_pipeSock;
+    int                 m_serverSock;
+    int                 m_pipeSock;    
+#endif
 
-    bool     m_resize;
+    bool                m_resize;
+                        
+    uint32_t            m_width;
+    uint32_t            m_height;
+                        
+    int                 m_frames;
+    double              m_time;
+                        
+    double              m_frameTime;
+    double              m_fps;
+                        
+    GLuint              m_tex;
 
-    uint32_t m_width;
-    uint32_t m_height;
-
-    int      m_frames;
-    double   m_time;
-
-    double   m_frameTime;
-    double   m_fps;
-
-    GLuint   m_tex;
-
-    PipeMessage RecieveMessage() const;
+    PipeMessage ReceiveMessage() const;
     void PushMessage(const PipeMessage& a_message) const;
     
+    void InitMessage() const;
+    void PollMessage();
+
 protected:
 
 public:
@@ -38,7 +58,11 @@ public:
 
     inline bool IsRunning() const
     {
-        return m_process > 0 && m_serverSock != -1;
+#if WIN32
+        return m_processInfo.hProcess != INVALID_HANDLE_VALUE && m_processInfo.hThread != INVALID_HANDLE_VALUE && m_pipeSock != INVALID_SOCKET && m_serverSock != INVALID_SOCKET;
+#else
+        return m_process > 0 && m_pipeSock >= 0 && m_serverSock >= 0;
+#endif
     }
 
     inline GLuint GetImage() const

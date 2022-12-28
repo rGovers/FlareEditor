@@ -9,7 +9,7 @@
 
 #include "Logger.h"
 
-static void Logger_PushMessage(MonoString* a_string)
+FLARE_MONO_EXPORT(void, Logger_PushMessage, MonoString* a_string)
 {
     char* str = mono_string_to_utf8(a_string);
 
@@ -17,7 +17,7 @@ static void Logger_PushMessage(MonoString* a_string)
 
     mono_free(str);
 }
-static void Logger_PushWarning(MonoString* a_string)
+FLARE_MONO_EXPORT(void, Logger_PushWarning, MonoString* a_string)
 {
     char* str = mono_string_to_utf8(a_string);
 
@@ -25,7 +25,7 @@ static void Logger_PushWarning(MonoString* a_string)
 
     mono_free(str);
 }
-static void Logger_PushError(MonoString* a_string)
+FLARE_MONO_EXPORT(void, Logger_PushError, MonoString* a_string)
 {
     char* str = mono_string_to_utf8(a_string);
 
@@ -83,7 +83,7 @@ bool RuntimeManager::Build(const std::string_view& a_path, const std::string_vie
     args[1] = nameString;
 
     MonoObject* retVal = mono_runtime_invoke(m_buildMethod, NULL, args, NULL);
-    const mono_bool retValBool = *(bool*)mono_object_unbox(retVal);
+    const mono_bool retValBool = *(mono_bool*)mono_object_unbox(retVal);
 
     if (retValBool == 0)
     {

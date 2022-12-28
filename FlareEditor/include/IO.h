@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string_view>
+#include <string>
 
 class IO
 {
@@ -9,5 +9,5 @@ private:
 protected:
 
 public:
-    static std::string_view GetHomePath();
+    static std::string GetHomePath();
 };
