@@ -422,18 +422,17 @@ void ProcessManager::PollMessage()
 
         break;
     }
+    case PipeMessageType_Close:
+    {
+#if WIN32
+        m_processInfo.hProcess = INVALID_HANDLE_VALUE;
+        m_processInfo.hThread = INVALID_HANDLE_VALUE;
+#else
+        m_process = -1;
+#endif
+    }
     case PipeMessageType_Null:
     {
-        Logger::Warning("Editor: Null Message");
-
-#if WIN32
-        if (m_pipeSock != INVALID_SOCKET)
-        {
-            closesocket(m_pipeSock);
-            m_pipeSock = INVALID_SOCKET;
-        }
-#endif
-
         break;
     }
     default:
@@ -512,16 +511,23 @@ void ProcessManager::Stop()
     PushMessage({ PipeMessageType_Close });
 
 #if WIN32
+    while (m_processInfo.hProcess != INVALID_HANDLE_VALUE && m_processInfo.hThread != INVALID_HANDLE_VALUE)
+    {
+        PollMessage();
+    }
+    
     if (m_pipeSock != INVALID_SOCKET)
     {
         closesocket(m_pipeSock);
         m_pipeSock = INVALID_SOCKET;
     }
-    m_processInfo.hProcess = INVALID_HANDLE_VALUE;
-    m_processInfo.hThread = INVALID_HANDLE_VALUE;
 #else
+    while (m_process != -1)
+    {
+        PollMessage();
+    }
+
     close(m_pipeSock);
-    m_process = -1;
     m_pipeSock = -1;
 #endif
     
