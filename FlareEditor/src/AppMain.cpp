@@ -82,8 +82,6 @@ static void GLAPIENTRY MessageCallback
     }
     default:
     {
-        Logger::Message(stream.str());
-
         break;
     }
     }
@@ -345,7 +343,9 @@ void AppMain::Update(double a_delta, double a_time)
     if (m_process->IsRunning())
     {
         const int engineFPS = (int)m_process->GetFPS();
+        const int engineUPS = (int)m_process->GetUPS();
 
+        title += " EngineUPS: " + std::to_string(engineUPS);
         title += " EngineFPS: " + std::to_string(engineFPS);
     }
 

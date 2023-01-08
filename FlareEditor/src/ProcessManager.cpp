@@ -117,7 +117,10 @@ ProcessManager::ProcessManager()
     m_fps = 0.0;
     m_frameTime = 0.0;
     m_frames = 0;
-    m_time = 0.0;
+
+    m_ups = 0.0;
+    m_updateTime = 0.0;
+    m_updates = 0;
 }   
 ProcessManager::~ProcessManager()
 {
@@ -311,7 +314,12 @@ bool ProcessManager::Start(const std::string_view& a_workingDir)
         else if (m_process == 0)
         {
             // Starting the engine
-            execl("./FlareNative", "--headless", workingDirArg.c_str(), nullptr);
+            if (execl("./FlareNative", "--headless", workingDirArg.c_str(), nullptr) < 0)
+            {
+                printf("Failed to start process");
+                perror("execl");
+                assert(0);
+            }
         }
         else
         {
@@ -381,13 +389,29 @@ void ProcessManager::PollMessage()
 
         ++m_frames;
 
-        m_frameTime = delta;
-        m_time -= delta;
-        if (m_time <= 0)
+        m_frameTime -= delta;
+        if (m_frameTime <= 0)
         {
             m_fps = m_frames * 2;
-            m_time += 0.5;
+            m_frameTime += 0.5;
             m_frames = 0;
+        }
+
+        break;
+    }
+    case PipeMessageType_UpdateData:
+    {
+        const double delta = *(double*)(msg.Data + 0);
+        const double time = *(double*)(msg.Data + 4);
+
+        ++m_updates;
+
+        m_updateTime -= delta;
+        if (m_updateTime <= 0)
+        {
+            m_ups = m_updates * 2;
+            m_updateTime += 0.5f;
+            m_updates = 0;
         }
 
         break;

@@ -36,9 +36,11 @@ private:
     uint32_t            m_width;
     uint32_t            m_height;
                         
-    int                 m_frames;
-    double              m_time;
-                        
+    int                 m_updates;
+    double              m_updateTime;
+    double              m_ups;
+
+    int                 m_frames;                    
     double              m_frameTime;
     double              m_fps;
                         
@@ -83,9 +85,9 @@ public:
     {
         return m_fps;
     }
-    inline double GetFrameTime() const
+    inline double GetUPS() const
     {
-        return m_frameTime;
+        return m_ups;
     }
 
     void SetSize(uint32_t a_width, uint32_t a_height);
