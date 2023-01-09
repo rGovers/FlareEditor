@@ -17,6 +17,7 @@
 #include <string>
 
 #include "Logger.h"
+#include "ProfilerData.h"
 
 static std::string GetAddr(const std::string_view& a_addr)
 {
@@ -234,6 +235,8 @@ bool ProcessManager::Start(const std::string_view& a_workingDir)
 {
     Logger::Message("Spawning FlareEngine Instance");
 
+    ProfilerData::Clear();
+
     const std::string workingDirArg = "--wDir=" + std::string(a_workingDir);
 #if WIN32
     const std::string args = "FlareNative.exe --headless " + workingDirArg;
@@ -443,6 +446,12 @@ void ProcessManager::PollMessage()
             break;
         }
         }
+
+        break;
+    }
+    case PipeMessageType_ProfileScope:
+    {
+        ProfilerData::PushData(*(ProfileScope*)msg.Data);
 
         break;
     }

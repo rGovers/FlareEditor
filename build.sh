@@ -8,15 +8,23 @@ echo "------------------------"
 echo
 mkdir bin/build
 cd bin/build
-cmake -DCMAKE_BUILD_TYPE=Release -DGENERATE_CONFIG=ON ../../FlareEngine/cpp/
-echo
+cmake -DCMAKE_BUILD_TYPE=Release -DGENERATE_CONFIG=ON -DENABLE_TRACE=ON -DENABLE_PROFILER=ON ../../FlareEngine/cpp/
 make -j6
 echo
-msbuild ../../FlareEditorMonitor/FlareEditorMonitor.csproj
+echo "------------------------"
+echo
+echo "Building Editor CS"
+echo
+echo "------------------------"
+echo
+../../FlareEngine/deps/mono/build/bin/xbuild ../../FlareEditorMonitor/FlareEditorMonitor.csproj
 cd ..
 mv build/FlareNative FlareNative
-mv ../FlareEditorMonitor/bin/FlareCS.exe FlareCS.dll
-mv ../FlareEditorMonitor/bin/FlareEditorMonitor.dll FlareEditorMonitor.dll
+mv ../FlareEditorBuildEngine/bin/*.dll .
+mv ../FlareEditorCS/bin/FlareCS.exe FlareCS.dll
+mv ../FlareEditorCS/bin/FlareEditorCS.dll FlareEditorCS.dll
+cp -r ../FlareEngine/deps/mono/build/lib .
+cp -r ../FlareEngine/deps/mono/build/etc .
 echo "------------------------"
 echo
 echo "Building Editor"

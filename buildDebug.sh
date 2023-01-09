@@ -9,7 +9,6 @@ echo
 mkdir bin/build
 cd bin/build
 cmake -DCMAKE_BUILD_TYPE=Debug -DGENERATE_CONFIG=ON ../../FlareEngine/cpp/
-echo
 make -j6
 echo
 echo "------------------------"
@@ -19,7 +18,6 @@ echo
 echo "------------------------"
 echo
 ../../FlareEngine/deps/mono/build/bin/xbuild ../../FlareEditorBuildEngine/FlareEditorBuildEngine.csproj
-echo
 ../../FlareEngine/deps/mono/build/bin/xbuild ../../FlareEditorCS/FlareEditorCS.csproj
 cd ..
 mv build/FlareNative FlareNative

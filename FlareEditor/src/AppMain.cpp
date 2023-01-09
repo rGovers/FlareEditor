@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+#include <implot.h>
 #include <string>
 #include <sstream>
 
@@ -11,6 +12,7 @@
 #include "FileHandler.h"
 #include "Modals/CreateProjectModal.h"
 #include "ProcessManager.h"
+#include "ProfilerData.h"
 #include "Project.h"
 #include "RuntimeManager.h"
 #include "Windows/AssetBrowserWindow.h"
@@ -18,6 +20,7 @@
 #include "Windows/ControlWindow.h"
 #include "Windows/EditorWindow.h"
 #include "Windows/GameWindow.h"
+#include "Windows/ProfilerWindow.h"
 
 #include "Modals/ErrorModal.h"
 
@@ -108,6 +111,7 @@ AppMain::AppMain() : Application(1280, 720, "FlareEditor")
 {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    ImPlot::CreateContext();
 
 #ifndef NDEBUG
     glEnable(GL_DEBUG_OUTPUT);
@@ -132,6 +136,8 @@ AppMain::AppMain() : Application(1280, 720, "FlareEditor")
 
     Datastore::Init();
     FileHandler::Init();
+
+    ProfilerData::Init();
 
     m_process = new ProcessManager();
     m_runtime = new RuntimeManager();
@@ -173,11 +179,14 @@ AppMain::~AppMain()
     delete m_process;
     delete m_runtime;
 
+    ProfilerData::Destroy();
+
     FileHandler::Destroy();
     Datastore::Destroy();
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
+    ImPlot::DestroyContext();
     ImGui::DestroyContext();
 }
 
@@ -266,6 +275,13 @@ void AppMain::Update(double a_delta, double a_time)
                 if (ImGui::MenuItem("Console"))
                 {
                     m_windows.emplace_back(new ConsoleWindow());
+                }
+
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("Profiler"))
+                {
+                    m_windows.emplace_back(new ProfilerWindow());
                 }
 
                 ImGui::EndMenu();
