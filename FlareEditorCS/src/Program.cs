@@ -1,10 +1,18 @@
+using FlareEngine.Definitions;
+using System;
+using System.Reflection;
+
 namespace FlareEditor
 {
-    internal class Program
+    internal static class Program
     {
         static void Load()
         {
-            Logger.Message("Editor Loaded");
+            Type defLibraryType = typeof(DefLibrary);
+            MethodInfo initMethod = defLibraryType.GetMethod("Init", BindingFlags.Static | BindingFlags.NonPublic);
+            initMethod.Invoke(null, new object[] { });
+
+            AssetProperties.Init();
         }
 
         static void Update(double a_delta)
@@ -14,6 +22,8 @@ namespace FlareEditor
 
         static void Unload()
         {
+            DefLibrary.Clear();
+
             // AppDomain.Unload(AppDomain.CurrentDomain);
         }
         

@@ -1,30 +1,29 @@
-#include "Modals/CreateProjectModal.h"
+#include "Modals/OpenProjectModal.h"
 
 #include <imgui.h>
-#include <string.h>
 
 #include "AppMain.h"
 #include "FileDialog.h"
 #include "IO.h"
 #include "Modals/ErrorModal.h"
 
-CreateProjectModal::CreateProjectModal(AppMain* a_app, Callback a_callback) : Modal("Create Project", glm::vec2(640, 480))
+OpenProjectModal::OpenProjectModal(AppMain* a_app, Callback a_callback) : Modal("Open Project", glm::vec2(640, 480))
 {
     m_app = a_app;
 
     m_callback = a_callback;
 
     m_path = IO::GetHomePath();
-    m_name = "UnnamedProject";
+    m_name = "";
 
-    FileDialog::GenerateDirs(&m_dirs, m_path);
+    FileDialog::GenerateFileDirs(&m_dirs, &m_files, m_path);
 }
-CreateProjectModal::~CreateProjectModal()
+OpenProjectModal::~OpenProjectModal()
 {
 
 }
 
-bool CreateProjectModal::Update()
+bool OpenProjectModal::Update()
 {
     char buffer[BufferSize];
 
@@ -35,8 +34,6 @@ bool CreateProjectModal::Update()
         m_app->PushModal(new ErrorModal("Path exceeds buffer size"));
 
         m_path = IO::GetHomePath();
-
-        return true;
     }
     for (uint32_t i = 0; i < pathLen; ++i)
     {
@@ -49,15 +46,17 @@ bool CreateProjectModal::Update()
         m_path = buffer;
 
         m_dirs.clear();
+        m_files.clear();
 
-        FileDialog::GenerateDirs(&m_dirs, m_path);
-    }   
+        FileDialog::GenerateFileDirs(&m_dirs, &m_files, m_path);
+    }
 
-    if (!FileDialog::DirectoryExplorer(m_dirs, &m_path))
+    if (!FileDialog::FileExplorer(m_dirs, m_files, &m_path, &m_name))
     {
         m_dirs.clear();
+        m_files.clear();
 
-        FileDialog::GenerateDirs(&m_dirs, m_path);
+        FileDialog::GenerateFileDirs(&m_dirs, &m_files, m_path);
     }
 
     const uint32_t nameLen = (uint32_t)m_name.length();
@@ -66,9 +65,8 @@ bool CreateProjectModal::Update()
         m_app->PushModal(new ErrorModal("Name exceeds buffer size"));
 
         m_name.clear();
-
-        return true;
     }
+
     for (uint32_t i = 0; i < nameLen; ++i)
     {
         buffer[i] = m_name[i];
@@ -81,9 +79,16 @@ bool CreateProjectModal::Update()
     }
 
     ImGui::SameLine();
-
-    if (ImGui::Button("Create"))
+    
+    if (ImGui::Button("Open"))
     {
+        if (!std::filesystem::exists(m_path))
+        {
+            m_app->PushModal(new ErrorModal("Directory does not exist"));
+
+            return true;
+        }
+
         if (m_name.empty())
         {
             m_app->PushModal(new ErrorModal("Invalid Name"));
@@ -91,12 +96,17 @@ bool CreateProjectModal::Update()
             return true;
         }
 
-        if (!std::filesystem::exists(m_path))
+        if (!std::filesystem::exists(m_path / m_name))
         {
-            m_app->PushModal(new ErrorModal("Directory does not exist"));
+            if (!std::filesystem::exists(m_path / (m_name + ".flareproj")))
+            {
+                m_app->PushModal(new ErrorModal("File does not exist"));
+
+                return true;
+            }
         }
 
-        m_callback(m_path / m_name, m_name);
+        m_callback(m_path, m_name);
 
         return false;
     }

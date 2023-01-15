@@ -1,4 +1,4 @@
-#include "RuntimeManager.h"
+#include "Runtime/RuntimeManager.h"
 
 #include <assert.h>
 #include <chrono>
@@ -56,9 +56,9 @@ RuntimeManager::RuntimeManager()
 
     mono_method_desc_free(buildDesc);
 
-    mono_add_internal_call("FlareEditor.BuildEngine.Logger::PushMessage", (void*)Logger_PushMessage);
-    mono_add_internal_call("FlareEditor.BuildEngine.Logger::PushWarning", (void*)Logger_PushWarning);
-    mono_add_internal_call("FlareEditor.BuildEngine.Logger::PushError", (void*)Logger_PushError);
+    mono_add_internal_call("FlareEditor.BuildEngine.Logger::Message", (void*)Logger_PushMessage);
+    mono_add_internal_call("FlareEditor.BuildEngine.Logger::Warning", (void*)Logger_PushWarning);
+    mono_add_internal_call("FlareEditor.BuildEngine.Logger::Error", (void*)Logger_PushError);
 
     m_editorDomain = nullptr;
 }
@@ -139,8 +139,8 @@ void RuntimeManager::Start()
 
     m_editorAssembly = mono_domain_assembly_open(m_editorDomain, "./FlareEditorCS.dll");
     assert(m_editorAssembly != nullptr);
-    MonoImage* image = mono_assembly_get_image(m_editorAssembly);
-    MonoClass* editorProgramClass = mono_class_from_name(image, "FlareEditor", "Program");
+    m_editorImage = mono_assembly_get_image(m_editorAssembly);
+    MonoClass* editorProgramClass = mono_class_from_name(m_editorImage, "FlareEditor", "Program");
 
     MonoMethodDesc* loadDesc = mono_method_desc_new(":Load()", 0);
     MonoMethodDesc* updateDesc = mono_method_desc_new(":Update(double)", 0);
@@ -150,9 +150,13 @@ void RuntimeManager::Start()
     m_editorUpdateMethod = mono_method_desc_search_in_class(updateDesc, editorProgramClass);
     m_editorUnloadMethod = mono_method_desc_search_in_class(unloadDesc, editorProgramClass);
 
-    mono_add_internal_call("FlareEditor.Logger::PushMessage", (void*)Logger_PushMessage);
-    mono_add_internal_call("FlareEditor.Logger::PushWarning", (void*)Logger_PushWarning);
-    mono_add_internal_call("FlareEditor.Logger::PushError", (void*)Logger_PushError);
+    mono_add_internal_call("FlareEngine.Logger::PushMessage", (void*)Logger_PushMessage);
+    mono_add_internal_call("FlareEngine.Logger::PushWarning", (void*)Logger_PushWarning);
+    mono_add_internal_call("FlareEngine.Logger::PushError", (void*)Logger_PushError);
+
+    m_engineAssembly = mono_domain_assembly_open(m_editorDomain, "FlareCS.dll");
+    assert(m_engineAssembly != nullptr);
+    m_engineImage = mono_assembly_get_image(m_engineAssembly);
 
     mono_runtime_invoke(loadMethod, NULL, NULL, NULL);
 
@@ -170,5 +174,34 @@ void RuntimeManager::Update()
         args[0] = (void*)&d;
 
         mono_runtime_invoke(m_editorUpdateMethod, NULL, args, NULL);
+    }
+}
+
+void RuntimeManager::BindFunction(const std::string_view& a_location, void* a_function)
+{
+    mono_add_internal_call(a_location.data(), a_function);
+}
+void RuntimeManager::ExecFunction(const std::string_view& a_namespace, const std::string_view& a_class, const std::string_view& a_method, void** a_args) const
+{
+    if (m_editorDomain != nullptr)
+    {
+        MonoClass* cls = nullptr;
+        if (a_namespace.find("FlareEngine") != std::string::npos)
+        {
+            cls = mono_class_from_name(m_engineImage, a_namespace.data(), a_class.data());
+        }
+        else
+        {
+            cls = mono_class_from_name(m_editorImage, a_namespace.data(), a_class.data());
+        }
+        assert(cls != nullptr);
+
+        MonoMethodDesc* desc = mono_method_desc_new(a_method.data(), 0);
+        MonoMethod* method = mono_method_desc_search_in_class(desc, cls);
+        assert(method != nullptr);
+
+        mono_method_desc_free(desc);
+
+        mono_runtime_invoke(method, NULL, a_args, NULL);
     }
 }

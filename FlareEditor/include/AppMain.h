@@ -11,6 +11,7 @@ class AssetLibrary;
 class Project;
 class ProcessManager;
 class RuntimeManager;
+class Workspace;
 
 class AppMain : public Application
 {
@@ -26,8 +27,10 @@ private:
     Project*             m_project;
     ProcessManager*      m_process;
     RuntimeManager*      m_runtime;
+    Workspace*           m_workspace;
 
     bool                 m_focused;
+
 protected:
 
 public:

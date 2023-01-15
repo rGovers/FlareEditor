@@ -1,29 +1,31 @@
 #pragma once
 
+#include <filesystem>
 #include <functional>
-#include <string>
 #include <unordered_map>
 
 class Texture;
+class Workspace;
 
 class FileHandler
 {
 public:
-    using FileCallback = std::function<void(const std::string_view&, const std::string_view&)>;
+    using FileCallback = std::function<void(const std::filesystem::path&, uint32_t, const char*)>;
 
 private:
     static FileHandler* Instance;
 
-    std::unordered_map<std::string, Texture*> m_extTex;
+    std::unordered_map<std::string, Texture*>     m_extTex;
+    std::unordered_map<std::string, FileCallback> m_extCallback;
 
-    FileHandler();
+    FileHandler(Workspace* a_workspace);
 protected:
 
 public:
     ~FileHandler();
 
-    static void Init();
+    static void Init(Workspace* a_workspace);
     static void Destroy();
 
-    static void GetFileData(const std::string_view& a_filename, const std::string_view& a_ext, FileCallback*& a_callback, Texture*& a_texture);
+    static void GetFileData(const std::filesystem::path& a_path, FileCallback*& a_callback, Texture*& a_texture);
 };

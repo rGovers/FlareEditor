@@ -4,6 +4,8 @@
 #include <list>
 #include <string>
 
+class RuntimeManager;
+
 enum e_AssetType
 {
     AssetType_Null = -1,
@@ -33,6 +35,8 @@ public:
     AssetLibrary();
     ~AssetLibrary();
 
-    void Refresh(const std::string_view& a_workingDir);
-    void BuildDirectory(const std::string_view& a_path) const;
+    void Refresh(const std::filesystem::path& a_workingDir, RuntimeManager* a_runtime);
+    void BuildDirectory(const std::filesystem::path& a_path) const;
+
+    void GetAsset(const std::filesystem::path& a_workingDir, const std::filesystem::path& a_path, uint32_t* a_size, const char** a_data);
 };

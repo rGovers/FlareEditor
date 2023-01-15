@@ -5,7 +5,7 @@
 #include "Modals/ErrorModal.h"
 #include "ProcessManager.h"
 #include "Project.h"
-#include "RuntimeManager.h"
+#include "Runtime/RuntimeManager.h"
 
 ControlWindow::ControlWindow(AppMain* a_app, ProcessManager* a_processManager, RuntimeManager* a_runtimeManager, Project* a_project) : Window("Control")
 {

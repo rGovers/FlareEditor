@@ -3,6 +3,7 @@
 #include <fstream>
 
 #include "Logger.h"
+#include "Runtime/RuntimeManager.h"
 
 AssetLibrary::AssetLibrary()
 {
@@ -19,6 +20,28 @@ AssetLibrary::~AssetLibrary()
     }
 }
 
+static std::filesystem::path GetRelativePath(const std::filesystem::path& a_relative, const std::filesystem::path& a_path)
+{
+    std::filesystem::path tempPath = a_path;
+    std::filesystem::path path;
+
+    while (tempPath != a_relative)
+    {
+        if (path.empty())
+        {
+            path = tempPath.stem();
+            path.replace_extension(tempPath.extension());
+        }
+        else
+        {
+            path = tempPath.stem() / path;
+        }
+        tempPath = tempPath.parent_path();
+    }
+
+    return path;
+}
+
 void AssetLibrary::TraverseTree(const std::filesystem::path& a_path, const std::filesystem::path& a_workingDir)
 {
     for (const auto& iter : std::filesystem::directory_iterator(a_path, std::filesystem::directory_options::skip_permission_denied))
@@ -27,21 +50,7 @@ void AssetLibrary::TraverseTree(const std::filesystem::path& a_path, const std::
         {
             Asset asset;
 
-            std::filesystem::path tempPath = iter.path();
-
-            while (tempPath != a_workingDir)
-            {
-                if (asset.Path.empty())
-                {
-                    asset.Path = tempPath.stem();
-                    asset.Path.replace_extension(tempPath.extension());
-                }
-                else
-                {
-                    asset.Path = tempPath.stem() / asset.Path;
-                }
-                tempPath = tempPath.parent_path();
-            }
+            asset.Path = GetRelativePath(a_workingDir, iter.path());
 
             const std::filesystem::path ext = asset.Path.extension();
             if (ext == ".cs")
@@ -86,7 +95,7 @@ void AssetLibrary::TraverseTree(const std::filesystem::path& a_path, const std::
     }
 }
 
-void AssetLibrary::Refresh(const std::string_view& a_workingDir)
+void AssetLibrary::Refresh(const std::filesystem::path& a_workingDir, RuntimeManager* a_runtime)
 {
     for (const Asset& asset : m_assets)
     {
@@ -98,11 +107,47 @@ void AssetLibrary::Refresh(const std::string_view& a_workingDir)
 
     m_assets.clear();
 
-    const std::filesystem::path p = std::filesystem::path(a_workingDir) / "Project";
+    const std::filesystem::path p = a_workingDir / "Project";
 
     TraverseTree(p, p);
+
+    std::vector<const char*> assets;
+    std::vector<unsigned int> sizes;
+    std::vector<std::filesystem::path> paths;
+
+    for (const Asset& asset : m_assets)
+    {
+        if (asset.AssetType == AssetType_Def)
+        {
+            assets.emplace_back(asset.Data);
+            sizes.emplace_back((unsigned int)asset.Size);
+            paths.emplace_back(p / asset.Path);
+        }
+    }
+
+    MonoDomain* editorDomain = a_runtime->GetEditorDomain();
+
+    MonoClass* stringClass = mono_get_string_class();
+
+    const uint32_t size = (uint32_t)assets.size();
+
+    MonoArray* assetsArray = mono_array_new(editorDomain, stringClass, (uintptr_t)size);
+    MonoArray* pathArray = mono_array_new(editorDomain, stringClass, (uintptr_t)size);
+    for (uint32_t i = 0; i < size; ++i)
+    {
+        mono_array_set(assetsArray, MonoString*, i, mono_string_new_len(editorDomain, assets[i], sizes[i]));
+        mono_array_set(pathArray, MonoString*, i, mono_string_from_utf32((mono_unichar4*)paths[i].u32string().c_str()));
+    }
+
+    void* args[] = 
+    {
+        assetsArray,
+        pathArray
+    };
+
+    a_runtime->ExecFunction("FlareEngine.Definitions", "DefLibrary", ":LoadDefs(string[],string[])", args);
 }
-void AssetLibrary::BuildDirectory(const std::string_view& a_path) const
+void AssetLibrary::BuildDirectory(const std::filesystem::path& a_path) const
 {
     for (const Asset& asset : m_assets)
     {
@@ -114,7 +159,7 @@ void AssetLibrary::BuildDirectory(const std::string_view& a_path) const
         }
         case AssetType_Def:
         {
-            const std::filesystem::path p = std::filesystem::path(a_path) / "Core" / "Defs" / asset.Path;
+            const std::filesystem::path p = a_path / "Core" / "Defs" / asset.Path;
             
             std::filesystem::create_directories(p.parent_path());
 
@@ -134,7 +179,7 @@ void AssetLibrary::BuildDirectory(const std::string_view& a_path) const
         }
         case AssetType_Other:
         {
-            const std::filesystem::path p = std::filesystem::path(a_path) / "Core" / "Assets" / asset.Path;
+            const std::filesystem::path p = a_path / "Core" / "Assets" / asset.Path;
 
             std::filesystem::create_directories(p.parent_path());
             
@@ -156,6 +201,25 @@ void AssetLibrary::BuildDirectory(const std::string_view& a_path) const
         {
             Logger::Warning("Invalid Asset: " + asset.Path.string());
         }
+        }
+    }
+}
+
+void AssetLibrary::GetAsset(const std::filesystem::path& a_workingDir, const std::filesystem::path& a_path, uint32_t* a_size, const char** a_data)
+{
+    *a_size = 0;
+    *a_data = nullptr;
+
+    const std::filesystem::path rPath = GetRelativePath(a_workingDir, a_path);
+
+    for (const Asset& asset : m_assets)
+    {
+        if (rPath == asset.Path)
+        {
+            *a_size = asset.Size;
+            *a_data = asset.Data;
+
+            return;
         }
     }
 }

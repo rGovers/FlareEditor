@@ -3,14 +3,16 @@
 #include <filesystem>
 #include <imgui.h>
 
+#include "AssetLibrary.h"
 #include "Datastore.h"
 #include "FileHandler.h"
 #include "FlareImGui.h"
 #include "Logger.h"
 #include "Project.h"
 
-AssetBrowserWindow::AssetBrowserWindow(Project* a_project) : Window("Asset Browser")
+AssetBrowserWindow::AssetBrowserWindow(Project* a_project, AssetLibrary* a_assetLibrary) : Window("Asset Browser")
 {
+    m_assetLibrary = a_assetLibrary;
     m_project = a_project;
 
     m_fileTree.clear();
@@ -21,30 +23,30 @@ AssetBrowserWindow::~AssetBrowserWindow()
 
 }
 
-void AssetBrowserWindow::MakeDirectoryNode(uint32_t a_parent, const std::string_view& a_path)
+void AssetBrowserWindow::MakeDirectoryNode(uint32_t a_parent, const std::filesystem::path& a_path)
 {
     DirectoryNode node;
     node.Parent = a_parent;
-    node.Path = std::string(a_path);
+    node.Path = a_path;
 
-    std::list<std::string> childPaths;
+    std::list<std::filesystem::path> childPaths;
 
     for (const auto iter : std::filesystem::directory_iterator(a_path, std::filesystem::directory_options::skip_permission_denied))
     {
         if (iter.is_regular_file())
         {
-            node.Files.emplace_back(iter.path().string());
+            node.Files.emplace_back(iter.path());
         }
         else if (iter.is_directory())
         {
-            childPaths.emplace_back(iter.path().string());   
+            childPaths.emplace_back(iter.path());   
         }
     }
 
     const uint32_t index = (uint32_t)m_fileTree.size();
     m_fileTree.emplace_back(node);
 
-    for (const std::string_view& child : childPaths)
+    for (const std::filesystem::path& child : childPaths)
     {
         node.Children.emplace_back(m_fileTree.size());
         MakeDirectoryNode(index, child);
@@ -61,9 +63,7 @@ void AssetBrowserWindow::TraverseFolderTree(uint32_t a_index)
         ImGui::SameLine();
     }
 
-    const std::filesystem::path p = std::filesystem::path(node.Path);
-
-    const std::string fileName = p.filename().string();
+    const std::string fileName = node.Path.filename().string();
 
     if (ImGui::Button(fileName.c_str()))
     {
@@ -123,9 +123,7 @@ void AssetBrowserWindow::Update()
     {
         const DirectoryNode& node = m_fileTree[index];
 
-        const std::filesystem::path p = std::filesystem::path(node.Path);
-
-        const std::string fileName = p.filename().string();
+        const std::string fileName = node.Path.filename().string();
 
         if (m_curIndex != index)
         {
@@ -182,22 +180,33 @@ void AssetBrowserWindow::Update()
             ImGui::NextColumn();
         }
 
-        for (const std::string_view& path : node.Files)
+        for (const std::filesystem::path& path : node.Files)
         {
             ImGui::BeginGroup();
 
-            const std::filesystem::path p = std::filesystem::path(path);
-
-            const std::string fileName = p.stem().string();
+            const std::string fileName = path.stem().string();
 
             FileHandler::FileCallback* callback = nullptr;
             Texture* tex = nullptr;
-            FileHandler::GetFileData(fileName, p.extension().string(), callback, tex);
+            FileHandler::GetFileData(path, callback, tex);
 
             FlareImGui::ImageButton(tex, glm::vec2(ItemWidth), false);
             if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
             {
-                Logger::Error("Not Implemented File Open");
+                if (callback == nullptr)
+                {
+                    Logger::Error("Not Implemented File Open");
+                }
+                else
+                {
+                    uint32_t size; 
+                    const char* data;
+                    m_assetLibrary->GetAsset(m_project->GetProjectPath(), path, &size, &data);
+                    if (size > 0 && data != nullptr)
+                    {
+                        (*callback)(path, size, data);
+                    }
+                }
             }
 
             ImGui::Text(fileName.c_str());

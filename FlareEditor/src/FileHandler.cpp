@@ -2,25 +2,28 @@
 
 #include "Datastore.h"
 #include "Texture.h"
+#include "Workspace.h"
 
 FileHandler* FileHandler::Instance = nullptr;
 
-FileHandler::FileHandler()
+FileHandler::FileHandler(Workspace* a_workspace)
 {
     m_extTex.emplace(".cs", Datastore::GetTexture("Textures/FileIcons/FileIcon_CSharpScript.png"));
     m_extTex.emplace(".frag", Datastore::GetTexture("Textures/FileIcons/FileIcon_GLFrag.png"));
     m_extTex.emplace(".vert", Datastore::GetTexture("Textures/FileIcons/FileIcon_GLVert.png"));
+
+    m_extCallback.emplace(".def", FileCallback(std::bind(&Workspace::OpenDef, a_workspace, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 }
 FileHandler::~FileHandler()
 {
 
 }
 
-void FileHandler::Init()
+void FileHandler::Init(Workspace* a_workspace)
 {
     if (Instance == nullptr)
     {
-        Instance = new FileHandler();
+        Instance = new FileHandler(a_workspace);
     }
 }
 void FileHandler::Destroy()
@@ -32,15 +35,27 @@ void FileHandler::Destroy()
     }
 }
 
-void FileHandler::GetFileData(const std::string_view& a_filename, const std::string_view& a_ext, FileCallback*& a_callback, Texture*& a_texture)
+void FileHandler::GetFileData(const std::filesystem::path& a_path, FileCallback*& a_callback, Texture*& a_texture)
 {
     a_texture = Datastore::GetTexture("Textures/FileIcons/FileIcon_Unknown.png");
     a_callback = nullptr;
-
-    const auto iter = Instance->m_extTex.find(std::string(a_ext));
-
-    if (iter != Instance->m_extTex.end())
+    
+    if (!a_path.has_extension())
     {
-        a_texture = iter->second;
+        return;
+    }
+
+    const std::string ext = a_path.extension();
+
+    const auto tIter = Instance->m_extTex.find(ext);
+    if (tIter != Instance->m_extTex.end())
+    {
+        a_texture = tIter->second;
+    }
+
+    const auto cIter = Instance->m_extCallback.find(ext);
+    if (cIter != Instance->m_extCallback.end())
+    {
+        a_callback = &cIter->second;
     }
 }

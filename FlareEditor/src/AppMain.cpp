@@ -10,17 +10,20 @@
 #include "AssetLibrary.h"
 #include "Datastore.h"
 #include "FileHandler.h"
+#include "GUI.h"
 #include "Modals/CreateProjectModal.h"
 #include "ProcessManager.h"
 #include "ProfilerData.h"
 #include "Project.h"
-#include "RuntimeManager.h"
+#include "Runtime/RuntimeManager.h"
 #include "Windows/AssetBrowserWindow.h"
 #include "Windows/ConsoleWindow.h"
 #include "Windows/ControlWindow.h"
 #include "Windows/EditorWindow.h"
 #include "Windows/GameWindow.h"
 #include "Windows/ProfilerWindow.h"
+#include "Windows/PropertiesWindow.h"
+#include "Workspace.h"
 
 #include "Modals/ErrorModal.h"
 
@@ -135,8 +138,6 @@ AppMain::AppMain() : Application(1280, 720, "FlareEditor")
 	}
 
     Datastore::Init();
-    FileHandler::Init();
-
     ProfilerData::Init();
 
     m_process = new ProcessManager();
@@ -146,11 +147,18 @@ AppMain::AppMain() : Application(1280, 720, "FlareEditor")
 
     m_assets = new AssetLibrary();
 
+    m_workspace = new Workspace(m_runtime);
+
+    GUI::Init(m_runtime);
+
+    FileHandler::Init(m_workspace);
+
     m_windows.emplace_back(new ConsoleWindow());
     m_windows.emplace_back(new ControlWindow(this, m_process, m_runtime, m_project));
     m_windows.emplace_back(new EditorWindow());
     m_windows.emplace_back(new GameWindow(m_process));
-    m_windows.emplace_back(new AssetBrowserWindow(m_project));
+    m_windows.emplace_back(new AssetBrowserWindow(m_project, m_assets));
+    m_windows.emplace_back(new PropertiesWindow(m_runtime));
 
     m_titleSet = 0.0;
     m_refresh = false;
@@ -183,6 +191,8 @@ AppMain::~AppMain()
 
     FileHandler::Destroy();
     Datastore::Destroy();
+
+    GUI::Destroy();
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
@@ -233,7 +243,7 @@ void AppMain::Update(double a_delta, double a_time)
 
             if (ImGui::MenuItem("Open Project"))
             {
-                Logger::Error("Open Project Not Implemented");
+                m_project->Open();
             }
 
             ImGui::Separator();
@@ -257,6 +267,11 @@ void AppMain::Update(double a_delta, double a_time)
         {
             if (ImGui::BeginMenu("Add"))
             {
+                if (ImGui::MenuItem("Control"))
+                {
+                    m_windows.emplace_back(new ControlWindow(this, m_process, m_runtime, m_project));
+                }
+
                 if (ImGui::MenuItem("Editor"))
                 {
                     m_windows.emplace_back(new EditorWindow());
@@ -267,14 +282,19 @@ void AppMain::Update(double a_delta, double a_time)
                     m_windows.emplace_back(new GameWindow(m_process));
                 }
 
-                if (ImGui::MenuItem("Control"))
+                if (ImGui::MenuItem("Asset Browser"))
                 {
-                    m_windows.emplace_back(new ControlWindow(this, m_process, m_runtime, m_project));
-                }
+                    m_windows.emplace_back(new AssetBrowserWindow(m_project, m_assets));
+                }                
 
                 if (ImGui::MenuItem("Console"))
                 {
                     m_windows.emplace_back(new ConsoleWindow());
+                }
+
+                if (ImGui::MenuItem("Properties"))
+                {
+                    m_windows.emplace_back(new PropertiesWindow(m_runtime));
                 }
 
                 ImGui::Separator();
@@ -337,18 +357,18 @@ void AppMain::Update(double a_delta, double a_time)
         m_refresh = false;
 
         const std::string path = std::string(m_project->GetPath()); 
+        
+        if (m_runtime->Build(path, m_project->GetName()))
+        {
+            m_runtime->Start();
+        }
 
-        m_assets->Refresh(path);
+        m_assets->Refresh(path, m_runtime);
         m_assets->BuildDirectory(path + "/.cache");
 
         for (Window* wind : m_windows)
         {
             wind->Refresh();
-        }
-
-        if (m_runtime->Build(path, m_project->GetName()))
-        {
-            m_runtime->Start();
         }
     }
 

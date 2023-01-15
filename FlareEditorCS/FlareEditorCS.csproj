@@ -12,6 +12,7 @@
     </ItemGroup>
     <ItemGroup>
         <Reference Include="System" />
+        <Reference Include="System.Xml" />
     </ItemGroup>
     <PropertyGroup Condition="'$(Configuration)'=='Debug'">
         <OutputPath>bin</OutputPath>

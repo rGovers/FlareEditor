@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <string>
 
 class AppMain;
@@ -7,12 +8,13 @@ class AppMain;
 class Project
 {
 private:
-    AppMain*    m_app;
+    AppMain*              m_app;
 
-    std::string m_path;
-    std::string m_name;
+    std::filesystem::path m_path;
+    std::string           m_name;
 
-    void NewCallback(const std::string_view& a_path, const std::string_view& a_name);
+    void NewCallback(const std::filesystem::path& a_path, const std::string_view& a_name);
+    void OpenCallback(const std::filesystem::path& a_path, const std::string_view& a_name);
 
 protected:
 
@@ -20,7 +22,7 @@ public:
     Project(AppMain* a_app);
     ~Project();
 
-    inline std::string_view GetPath() const
+    inline std::filesystem::path GetPath() const
     {
         return m_path;
     }
@@ -29,13 +31,13 @@ public:
         return m_name;
     }
 
-    inline std::string GetCachePath() const
+    inline std::filesystem::path GetCachePath() const
     {
-        return m_path + "/.cache";
+        return m_path / ".cache";
     }
-    inline std::string GetProjectPath() const
+    inline std::filesystem::path GetProjectPath() const
     {
-        return m_path + "/Project";
+        return m_path / "Project";
     }
 
     inline bool IsValidProject() const
@@ -44,4 +46,5 @@ public:
     }
 
     void New();
+    void Open();
 };

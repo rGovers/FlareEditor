@@ -19,14 +19,14 @@
 #include "Logger.h"
 #include "ProfilerData.h"
 
-static std::string GetAddr(const std::string_view& a_addr)
+static std::filesystem::path GetAddr(const std::string_view& a_addr)
 {
-    return (std::filesystem::temp_directory_path() / a_addr).string();
+    return std::filesystem::temp_directory_path() / a_addr;
 }
 
 ProcessManager::ProcessManager()
 {
-    const std::string addrStr = GetAddr(PipeName);
+    const std::filesystem::path addrStr = GetAddr(PipeName);
 
 #if WIN32
     m_pipeSock = INVALID_SOCKET;
@@ -36,7 +36,7 @@ ProcessManager::ProcessManager()
     m_processInfo.hThread = INVALID_HANDLE_VALUE;
     
     // Failsafe for unsafe close
-    DeleteFileA(addrStr.c_str());
+    DeleteFileA(addrStr.string().c_str());
     
     WSADATA wsaData = { };
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
@@ -56,7 +56,7 @@ ProcessManager::ProcessManager()
     sockaddr_un addr;
     ZeroMemory(&addr, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strcpy_s(addr.sun_path, addrStr.c_str());
+    strcpy_s(addr.sun_path, addrStr.string().c_str());
 
     if (bind(m_serverSock, (sockaddr*)&addr, sizeof(addr)) < 0)
     {
@@ -130,9 +130,9 @@ ProcessManager::~ProcessManager()
 #if WIN32
     closesocket(m_serverSock);
 
-    const std::string addrStr = GetAddr(PipeName);
+    const std::filesystem::path addrStr = GetAddr(PipeName);
     
-    DeleteFileA(addrStr.c_str());
+    DeleteFileA(addrStr.string().c_str());
     
     WSACleanup();
 #else
@@ -231,7 +231,7 @@ void ProcessManager::InitMessage() const
     PushMessage({ PipeMessageType_Resize, sizeof(glm::ivec2), (char*)&data });
 }
 
-bool ProcessManager::Start(const std::string_view& a_workingDir)
+bool ProcessManager::Start(const std::filesystem::path& a_workingDir)
 {
     Logger::Message("Spawning FlareEngine Instance");
 

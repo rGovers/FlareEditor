@@ -8,7 +8,7 @@
 
 class AppMain;
 
-class CreateProjectModal : public Modal
+class OpenProjectModal : public Modal
 {
 public:
     using Callback = std::function<void(const std::filesystem::path&, const std::string_view&)>;
@@ -22,14 +22,15 @@ private:
     std::string                      m_name;
 
     std::list<std::filesystem::path> m_dirs;
+    std::list<std::filesystem::path> m_files;
 
     Callback                         m_callback;
 
 protected:
 
 public:
-    CreateProjectModal(AppMain* a_app, Callback a_callback);
-    virtual ~CreateProjectModal();
+    OpenProjectModal(AppMain* a_app, Callback a_callback);
+    virtual ~OpenProjectModal();
 
     virtual bool Update();
 };
