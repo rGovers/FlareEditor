@@ -17,7 +17,7 @@ echo "Building Editor CS"
 echo
 echo "------------------------"
 echo
-../../FlareEngine/deps/mono/build/bin/xbuild ../../FlareEditorMonitor/FlareEditorMonitor.csproj
+../../FlareEngine/deps/mono/build/bin/xbuild ../../FlareEditorCS/FlareEditorCS.csproj
 cd ..
 mv build/FlareNative FlareNative
 mv ../FlareEditorBuildEngine/bin/*.dll .

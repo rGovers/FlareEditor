@@ -12,7 +12,9 @@ FileHandler::FileHandler(Workspace* a_workspace)
     m_extTex.emplace(".frag", Datastore::GetTexture("Textures/FileIcons/FileIcon_GLFrag.png"));
     m_extTex.emplace(".vert", Datastore::GetTexture("Textures/FileIcons/FileIcon_GLVert.png"));
 
-    m_extCallback.emplace(".def", FileCallback(std::bind(&Workspace::OpenDef, a_workspace, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+    m_extOpenCallback.emplace(".def", FileCallback(std::bind(&Workspace::OpenDef, a_workspace, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+
+    m_extDragCallback.emplace(".def", FileCallback(std::bind(&Workspace::PushDef, a_workspace, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 }
 FileHandler::~FileHandler()
 {
@@ -35,11 +37,12 @@ void FileHandler::Destroy()
     }
 }
 
-void FileHandler::GetFileData(const std::filesystem::path& a_path, FileCallback*& a_callback, Texture*& a_texture)
+void FileHandler::GetFileData(const std::filesystem::path& a_path, FileCallback** a_openCallback, FileCallback** a_dragCallback, Texture** a_texture)
 {
-    a_texture = Datastore::GetTexture("Textures/FileIcons/FileIcon_Unknown.png");
-    a_callback = nullptr;
-    
+    *a_texture = Datastore::GetTexture("Textures/FileIcons/FileIcon_Unknown.png");
+    *a_openCallback = nullptr;
+    *a_dragCallback = nullptr;
+
     if (!a_path.has_extension())
     {
         return;
@@ -50,12 +53,18 @@ void FileHandler::GetFileData(const std::filesystem::path& a_path, FileCallback*
     const auto tIter = Instance->m_extTex.find(ext);
     if (tIter != Instance->m_extTex.end())
     {
-        a_texture = tIter->second;
+        *a_texture = tIter->second;
     }
 
-    const auto cIter = Instance->m_extCallback.find(ext);
-    if (cIter != Instance->m_extCallback.end())
+    const auto oIter = Instance->m_extOpenCallback.find(ext);
+    if (oIter != Instance->m_extOpenCallback.end())
     {
-        a_callback = &cIter->second;
+        *a_openCallback = &oIter->second;
+    }
+
+    const auto dIter = Instance->m_extDragCallback.find(ext);
+    if (dIter != Instance->m_extDragCallback.end())
+    {
+        *a_dragCallback = &dIter->second;
     }
 }

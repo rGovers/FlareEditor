@@ -186,29 +186,42 @@ void AssetBrowserWindow::Update()
 
             const std::string fileName = path.stem().string();
 
-            FileHandler::FileCallback* callback = nullptr;
-            Texture* tex = nullptr;
-            FileHandler::GetFileData(path, callback, tex);
+            FileHandler::FileCallback* openCallback;
+            FileHandler::FileCallback* dragCallback;
+            Texture* tex;
+            FileHandler::GetFileData(path, &openCallback, &dragCallback, &tex);
 
             FlareImGui::ImageButton(tex, glm::vec2(ItemWidth), false);
-            if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+
+            uint32_t size;
+            const char *data;
+            m_assetLibrary->GetAsset(m_project->GetProjectPath(), path, &size, &data);
+
+            if (size > 0 && data != nullptr)
             {
-                if (callback == nullptr)
+                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
                 {
-                    Logger::Error("Not Implemented File Open");
-                }
-                else
-                {
-                    uint32_t size; 
-                    const char* data;
-                    m_assetLibrary->GetAsset(m_project->GetProjectPath(), path, &size, &data);
-                    if (size > 0 && data != nullptr)
+                    if (openCallback == nullptr)
                     {
-                        (*callback)(path, size, data);
+                        Logger::Error("Not Implemented File Open");
+                    }
+                    else
+                    {
+                        (*openCallback)(path, size, data);
+                    }
+                }
+                
+                if (dragCallback != nullptr)
+                {
+                    if (ImGui::BeginDragDropSource())
+                    {
+                        (*dragCallback)(path, size, data);
+
+                        ImGui::EndDragDropSource();
                     }
                 }
             }
-
+            
             ImGui::Text(fileName.c_str());
 
             ImGui::EndGroup();

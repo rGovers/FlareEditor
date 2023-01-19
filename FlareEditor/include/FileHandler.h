@@ -16,7 +16,8 @@ private:
     static FileHandler* Instance;
 
     std::unordered_map<std::string, Texture*>     m_extTex;
-    std::unordered_map<std::string, FileCallback> m_extCallback;
+    std::unordered_map<std::string, FileCallback> m_extOpenCallback;
+    std::unordered_map<std::string, FileCallback> m_extDragCallback;
 
     FileHandler(Workspace* a_workspace);
 protected:
@@ -27,5 +28,5 @@ public:
     static void Init(Workspace* a_workspace);
     static void Destroy();
 
-    static void GetFileData(const std::filesystem::path& a_path, FileCallback*& a_callback, Texture*& a_texture);
+    static void GetFileData(const std::filesystem::path& a_path, FileCallback** a_openCallback, FileCallback** a_dragCallback, Texture** a_texture);
 };

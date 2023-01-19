@@ -18,4 +18,5 @@ public:
     ~Workspace();
 
     void OpenDef(const std::filesystem::path& a_path, uint32_t a_size, const char* a_data);
+    void PushDef(const std::filesystem::path& a_path, uint32_t a_size, const char* a_data);
 };
