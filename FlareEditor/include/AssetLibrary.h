@@ -25,6 +25,8 @@ struct Asset
 class AssetLibrary
 {
 private:
+    RuntimeManager* m_runtime;
+
     std::list<Asset> m_assets;
 
     void TraverseTree(const std::filesystem::path& a_path, const std::filesystem::path& a_workingDir);
@@ -32,11 +34,17 @@ private:
 protected:
 
 public:
-    AssetLibrary();
+    AssetLibrary(RuntimeManager* a_runtime);
     ~AssetLibrary();
 
-    void Refresh(const std::filesystem::path& a_workingDir, RuntimeManager* a_runtime);
+    static std::filesystem::path GetRelativePath(const std::filesystem::path& a_relative, const std::filesystem::path& a_path);
+
+    void WriteDef(const std::filesystem::path& a_path, uint32_t a_size, char* a_data);
+
+    void Refresh(const std::filesystem::path& a_workingDir);
     void BuildDirectory(const std::filesystem::path& a_path) const;
 
     void GetAsset(const std::filesystem::path& a_workingDir, const std::filesystem::path& a_path, uint32_t* a_size, const char** a_data);
+
+    void Serialize(const std::filesystem::path& a_workingDir) const;
 };

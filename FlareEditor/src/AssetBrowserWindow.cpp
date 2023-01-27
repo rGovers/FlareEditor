@@ -180,6 +180,8 @@ void AssetBrowserWindow::Update()
             ImGui::NextColumn();
         }
 
+        const std::filesystem::path workingPath = m_project->GetProjectPath();
+
         for (const std::filesystem::path& path : node.Files)
         {
             ImGui::BeginGroup();
@@ -195,7 +197,9 @@ void AssetBrowserWindow::Update()
 
             uint32_t size;
             const char *data;
-            m_assetLibrary->GetAsset(m_project->GetProjectPath(), path, &size, &data);
+            m_assetLibrary->GetAsset(workingPath, path, &size, &data);
+
+            const std::filesystem::path rPath = AssetLibrary::GetRelativePath(workingPath, path);
 
             if (size > 0 && data != nullptr)
             {
@@ -207,7 +211,7 @@ void AssetBrowserWindow::Update()
                     }
                     else
                     {
-                        (*openCallback)(path, size, data);
+                        (*openCallback)(rPath, size, data);
                     }
                 }
                 
@@ -215,7 +219,7 @@ void AssetBrowserWindow::Update()
                 {
                     if (ImGui::BeginDragDropSource())
                     {
-                        (*dragCallback)(path, size, data);
+                        (*dragCallback)(rPath, size, data);
 
                         ImGui::EndDragDropSource();
                     }

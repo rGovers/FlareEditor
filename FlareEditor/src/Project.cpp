@@ -5,20 +5,17 @@
 #include <tinyxml2.h>
 
 #include "AppMain.h"
+#include "AssetLibrary.h"
 #include "FlareEditorConfig.h"
 #include "Logger.h"
 #include "Modals/CreateProjectModal.h"
+#include "Modals/ErrorModal.h"
 #include "Modals/OpenProjectModal.h"
 #include "TemplateBuilder.h"
 #include "Templates/AssemblyControlCS.h"
 
 static void GenerateDirs(const std::filesystem::path& a_path)
 {
-    if (!std::filesystem::exists(a_path))
-    {
-        std::filesystem::create_directories(a_path);
-    }
-
     const std::filesystem::path projectDir = a_path / "Project";
     if (!std::filesystem::exists(projectDir))
     {
@@ -38,9 +35,11 @@ static void GenerateDirs(const std::filesystem::path& a_path)
     }
 }
 
-Project::Project(AppMain* a_app)
+Project::Project(AppMain* a_app, AssetLibrary* a_assetLibrary, Workspace* a_workspace)
 {
     m_app = a_app;
+    m_assetLibrary = a_assetLibrary;
+    m_workspace = a_workspace;
 }
 Project::~Project()
 {
@@ -102,6 +101,7 @@ void Project::OpenCallback(const std::filesystem::path& a_path, const std::strin
 
     m_app->RefreshProject();
 }
+
 void Project::New()
 {
     Logger::Message("New Project");
@@ -113,4 +113,17 @@ void Project::Open()
     Logger::Message("Open Project");
 
     m_app->PushModal(new OpenProjectModal(m_app, std::bind(&Project::OpenCallback, this, std::placeholders::_1, std::placeholders::_2)));
+}
+void Project::Save() const
+{
+    if (IsValidProject())
+    {
+        Logger::Message("Save Project");
+
+        m_assetLibrary->Serialize(m_path);
+    }
+    else
+    {
+        m_app->PushModal(new ErrorModal("Saving Invalid Project"));
+    }
 }

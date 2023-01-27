@@ -16,6 +16,9 @@ class Workspace;
 class AppMain : public Application
 {
 private:
+    static constexpr int SaveBit = 0;
+    static constexpr int LoadBit = 1;
+
     double               m_titleSet;
 
     bool                 m_refresh;
@@ -30,6 +33,8 @@ private:
     Workspace*           m_workspace;
 
     bool                 m_focused;
+
+    unsigned char        m_inputByte;
 
 protected:
 

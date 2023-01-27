@@ -4,11 +4,16 @@
 #include <string>
 
 class AppMain;
+class AssetLibrary;
+class RuntimeManager;
+class Workspace;
 
 class Project
 {
 private:
     AppMain*              m_app;
+    Workspace*            m_workspace;
+    AssetLibrary*         m_assetLibrary;
 
     std::filesystem::path m_path;
     std::string           m_name;
@@ -19,7 +24,7 @@ private:
 protected:
 
 public:
-    Project(AppMain* a_app);
+    Project(AppMain* a_app, AssetLibrary* a_assetLibrary, Workspace* a_workspace);
     ~Project();
 
     inline std::filesystem::path GetPath() const
@@ -47,4 +52,5 @@ public:
 
     void New();
     void Open();
+    void Save() const;
 };

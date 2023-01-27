@@ -5,9 +5,33 @@
 #include "Logger.h"
 #include "Runtime/RuntimeManager.h"
 
-AssetLibrary::AssetLibrary()
-{
+static AssetLibrary* Instance = nullptr;
 
+FLARE_MONO_EXPORT(void, PropertiesWindow_WriteDef, MonoString* a_path, MonoArray* a_data)
+{
+    mono_unichar4* str = mono_string_to_utf32(a_path);
+    const std::filesystem::path p = std::filesystem::path(std::u32string((char32_t*)str));
+
+    const uintptr_t len = mono_array_length(a_data);
+
+    char* data = new char[len];
+    for (uintptr_t i = 0; i < len; ++i)
+    {
+        data[i] = (char)mono_array_get(a_data, mono_byte, i);
+    }
+
+    Instance->WriteDef(p, (uint32_t)len, data);
+
+    mono_free(str);
+}
+
+AssetLibrary::AssetLibrary(RuntimeManager* a_runtime)
+{
+    m_runtime->BindFunction("FlareEditor.PropertiesWindow::WriteDef", (void*)PropertiesWindow_WriteDef);
+
+    m_runtime = a_runtime;
+    
+    Instance = this;
 }
 AssetLibrary::~AssetLibrary()
 {
@@ -20,7 +44,7 @@ AssetLibrary::~AssetLibrary()
     }
 }
 
-static std::filesystem::path GetRelativePath(const std::filesystem::path& a_relative, const std::filesystem::path& a_path)
+std::filesystem::path AssetLibrary::GetRelativePath(const std::filesystem::path& a_relative, const std::filesystem::path& a_path)
 {
     std::filesystem::path tempPath = a_path;
     std::filesystem::path path;
@@ -36,6 +60,7 @@ static std::filesystem::path GetRelativePath(const std::filesystem::path& a_rela
         {
             path = tempPath.stem() / path;
         }
+        
         tempPath = tempPath.parent_path();
     }
 
@@ -95,7 +120,24 @@ void AssetLibrary::TraverseTree(const std::filesystem::path& a_path, const std::
     }
 }
 
-void AssetLibrary::Refresh(const std::filesystem::path& a_workingDir, RuntimeManager* a_runtime)
+void AssetLibrary::WriteDef(const std::filesystem::path& a_path, uint32_t a_size, char* a_data)
+{
+    for (Asset& a : m_assets)
+    {
+        if (a.AssetType != AssetType_Def)
+        {
+            continue;
+        }
+
+        if (a.Path == a_path)
+        {
+            a.Data = a_data;
+            a.Size = a_size;
+        }
+    }
+}
+
+void AssetLibrary::Refresh(const std::filesystem::path& a_workingDir)
 {
     for (const Asset& asset : m_assets)
     {
@@ -112,7 +154,7 @@ void AssetLibrary::Refresh(const std::filesystem::path& a_workingDir, RuntimeMan
     TraverseTree(p, p);
 
     std::vector<const char*> assets;
-    std::vector<unsigned int> sizes;
+    std::vector<uint32_t> sizes;
     std::vector<std::filesystem::path> paths;
 
     for (const Asset& asset : m_assets)
@@ -120,32 +162,40 @@ void AssetLibrary::Refresh(const std::filesystem::path& a_workingDir, RuntimeMan
         if (asset.AssetType == AssetType_Def)
         {
             assets.emplace_back(asset.Data);
-            sizes.emplace_back((unsigned int)asset.Size);
-            paths.emplace_back(p / asset.Path);
+            sizes.emplace_back((uint32_t)asset.Size);
+            paths.emplace_back(asset.Path);
         }
     }
 
-    MonoDomain* editorDomain = a_runtime->GetEditorDomain();
+    MonoDomain* editorDomain = m_runtime->GetEditorDomain();
 
     MonoClass* stringClass = mono_get_string_class();
+    MonoClass* byteClass = mono_get_byte_class();
 
     const uint32_t size = (uint32_t)assets.size();
 
-    MonoArray* assetsArray = mono_array_new(editorDomain, stringClass, (uintptr_t)size);
+    MonoArray* dataArray = mono_array_new(editorDomain, stringClass, (uintptr_t)size);
     MonoArray* pathArray = mono_array_new(editorDomain, stringClass, (uintptr_t)size);
     for (uint32_t i = 0; i < size; ++i)
     {
-        mono_array_set(assetsArray, MonoString*, i, mono_string_new_len(editorDomain, assets[i], sizes[i]));
+        MonoArray* data = mono_array_new(editorDomain, byteClass, sizes[i]);
+        for (uint32_t j = 0; j < sizes[i]; ++j)
+        {
+            mono_array_set(data, mono_byte, j, (mono_byte)assets[i][j]);
+        }
+
+        mono_array_set(dataArray, MonoArray*, i, data);
         mono_array_set(pathArray, MonoString*, i, mono_string_from_utf32((mono_unichar4*)paths[i].u32string().c_str()));
     }
 
     void* args[] = 
     {
-        assetsArray,
+        dataArray,
         pathArray
     };
 
-    a_runtime->ExecFunction("FlareEngine.Definitions", "DefLibrary", ":LoadDefs(string[],string[])", args);
+    m_runtime->ExecFunction("FlareEngine.Definitions", "DefLibrary", ":LoadDefs(byte[][],string[])", args);
+    m_runtime->ExecFunction("FlareEngine.Definitions", "DefLibrary", ":ResolveDefs()", nullptr);
 }
 void AssetLibrary::BuildDirectory(const std::filesystem::path& a_path) const
 {
@@ -220,6 +270,54 @@ void AssetLibrary::GetAsset(const std::filesystem::path& a_workingDir, const std
             *a_data = asset.Data;
 
             return;
+        }
+    }
+}
+
+void AssetLibrary::Serialize(const std::filesystem::path& a_workingDir) const
+{
+    std::vector<Asset> defs;
+
+    for (const Asset& asset : m_assets)
+    {
+        if (asset.AssetType == AssetType_Def)
+        {
+            defs.emplace_back(asset);
+        }
+    }
+
+    const std::filesystem::path pPath = a_workingDir / "Project";
+
+    MonoDomain* domain = m_runtime->GetEditorDomain();
+    MonoClass* stringClass = mono_get_string_class();
+
+    const uintptr_t count = (uintptr_t)defs.size();
+    MonoArray* pathArray = mono_array_new(domain, stringClass, count);
+    for (uintptr_t i = 0; i < count; ++i)
+    {
+        const Asset& a = defs[i];
+        
+        const std::u32string pStr = a.Path.u32string();
+        mono_array_set(pathArray, MonoString*, i, mono_string_new_utf32(domain, (mono_unichar4*)pStr.c_str(), (int32_t)pStr.size()));
+    }
+
+    void* args[] =
+    {
+        pathArray
+    };
+
+    m_runtime->ExecFunction("FlareEditor", "PropertiesWindow", ":SerializeDefs(string[])", args);
+
+    for (const Asset& a : m_assets)
+    {
+        const std::filesystem::path p = pPath / a.Path;
+
+        std::ofstream file = std::ofstream(p);
+        if (file.good() && file.is_open())
+        {
+            file.write(a.Data, a.Size);
+
+            file.close();
         }
     }
 }

@@ -143,11 +143,11 @@ AppMain::AppMain() : Application(1280, 720, "FlareEditor")
     m_process = new ProcessManager();
     m_runtime = new RuntimeManager();
 
-    m_project = new Project(this);
-
-    m_assets = new AssetLibrary();
+    m_assets = new AssetLibrary(m_runtime);
 
     m_workspace = new Workspace(m_runtime);
+
+    m_project = new Project(this, m_assets, m_workspace);
 
     GUI::Init(m_runtime);
 
@@ -206,11 +206,13 @@ void AppMain::Update(double a_delta, double a_time)
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
+    GLFWwindow* window = GetWindow();
+
     const ImGuiIO& io = ImGui::GetIO();
 
     std::string title = "FlareEditor";
 
-    const int focusState = glfwGetWindowAttrib(GetWindow(), GLFW_FOCUSED);
+    const int focusState = glfwGetWindowAttrib(window, GLFW_FOCUSED);
     if (!m_focused && focusState)
     {
         m_refresh = true;
@@ -236,19 +238,26 @@ void AppMain::Update(double a_delta, double a_time)
     {
         if (ImGui::BeginMenu("File"))
         {
+            const bool validProject = m_project->IsValidProject();
+
             if (ImGui::MenuItem("New Project"))
             {
                 m_project->New();
             }
 
-            if (ImGui::MenuItem("Open Project"))
+            if (ImGui::MenuItem("Open Project", "Ctrl+O"))
             {
                 m_project->Open();
             }
 
+            if (ImGui::MenuItem("Save Project", "Ctrl+S", nullptr, validProject))
+            {
+                m_project->Save();
+            }
+
             ImGui::Separator();
 
-            if (ImGui::MenuItem("Build Project"))
+            if (ImGui::MenuItem("Build Project", nullptr, nullptr, validProject))
             {
                 Logger::Error("Build Project Not Implemented");
             }
@@ -351,20 +360,49 @@ void AppMain::Update(double a_delta, double a_time)
         ImGui::RenderPlatformWindowsDefault();
     }
 
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) || glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL))
+    {
+        if (glfwGetKey(window, GLFW_KEY_S))
+        {
+            if (!(m_inputByte & (0b1 << SaveBit)))
+            {
+                m_inputByte |= 0b1 << SaveBit;
+                m_project->Save();
+            }
+        }
+        else
+        {
+            m_inputByte &= ~(0b1 << SaveBit);
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_O))
+        {
+            if (!(m_inputByte & (0b1 << LoadBit)))
+            {
+                m_inputByte |= 0b1 << LoadBit;
+                m_project->Open();
+            }
+        }
+        else
+        {
+            m_inputByte &= ~(0b1 << LoadBit);
+        }
+    }
+
     if (m_refresh && validProject)
     {
         Logger::Message("Refreshing Project");
         m_refresh = false;
 
-        const std::string path = std::string(m_project->GetPath()); 
+        const std::filesystem::path path = m_project->GetPath(); 
         
-        if (m_runtime->Build(path, m_project->GetName()))
+        if (m_runtime->Build(std::string(path), m_project->GetName()))
         {
             m_runtime->Start();
         }
 
-        m_assets->Refresh(path, m_runtime);
-        m_assets->BuildDirectory(path + "/.cache");
+        m_assets->Refresh(path);
+        m_assets->BuildDirectory(path / ".cache");
 
         for (Window* wind : m_windows)
         {
