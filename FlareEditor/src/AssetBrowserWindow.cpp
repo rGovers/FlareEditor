@@ -86,7 +86,7 @@ void AssetBrowserWindow::Refresh()
 
     m_curIndex = 0;
 
-    MakeDirectoryNode(-1, std::string(m_project->GetPath()) + "/Project");
+    MakeDirectoryNode(-1, m_project->GetProjectPath());
 }
 void AssetBrowserWindow::Update()
 {

@@ -58,14 +58,13 @@ void ProfilerData::PushData(const ProfileScope& a_scope)
         }
     }
 
-    ProfileSnapshot snapshot;
+    // Stack is too small on windows and will crash so have to do everything on heap memory
+    ProfileSnapshot& snapshot = Instance->m_snapshots.emplace_back();
     snapshot.Name = a_scope.Name;
     snapshot.Index = 1;
     snapshot.StartIndex = 0;
     snapshot.Count = 1;
     snapshot.Scopes[0] = a_scope;
-
-    Instance->m_snapshots.emplace_back(snapshot);
 }
 std::vector<ProfileSnapshot> ProfilerData::GetSnapshots()
 {

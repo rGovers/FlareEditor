@@ -47,7 +47,7 @@ private:
                         
     GLuint              m_tex;
 
-    PipeMessage ReceiveMessage() const;
+    PipeMessage ReceiveMessage();
     void PushMessage(const PipeMessage& a_message) const;
     
     void InitMessage() const;

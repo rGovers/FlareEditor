@@ -156,7 +156,7 @@ void ProcessManager::DestroyProc()
 }
 #endif
 
-PipeMessage ProcessManager::ReceiveMessage() const
+PipeMessage ProcessManager::ReceiveMessage()
 {
     PipeMessage msg;
 
@@ -165,6 +165,9 @@ PipeMessage ProcessManager::ReceiveMessage() const
     if (size == SOCKET_ERROR)
     {
         Logger::Error("Connection Error: " + std::to_string(WSAGetLastError()));
+        m_pipeSock = INVALID_SOCKET;
+
+        return PipeMessage();
     }
     if (size >= PipeMessage::Size)
     {
@@ -180,7 +183,12 @@ PipeMessage ProcessManager::ReceiveMessage() const
 
                 len = (uint32_t)(dataBuffer - msg.Data);
             }
+            else
+            {
+                m_pipeSock = INVALID_SOCKET;
 
+                return PipeMessage();
+            }
         }
 
         return msg;
@@ -237,7 +245,7 @@ bool ProcessManager::Start(const std::filesystem::path& a_workingDir)
 
     ProfilerData::Clear();
 
-    const std::string workingDirArg = "--wDir=" + std::string(a_workingDir);
+    const std::string workingDirArg = "--wDir=" + a_workingDir.string();
 #if WIN32
     const std::string args = "FlareNative.exe --headless " + workingDirArg;
 
@@ -463,6 +471,7 @@ void ProcessManager::PollMessage()
 #else
         m_process = -1;
 #endif
+        break;
     }
     case PipeMessageType_Null:
     {
@@ -497,7 +506,7 @@ void ProcessManager::Update()
     fd_set fdSet;
     FD_ZERO(&fdSet);
     FD_SET(m_pipeSock, &fdSet);
-    if (select((int)(m_pipeSock + 1), &fdSet, NULL, NULL, &tv) > 0)
+    if (m_pipeSock != INVALID_SOCKET && select((int)(m_pipeSock + 1), &fdSet, NULL, NULL, &tv) > 0)
     {
         PollMessage();
     }
@@ -544,7 +553,7 @@ void ProcessManager::Stop()
     PushMessage({ PipeMessageType_Close });
 
 #if WIN32
-    while (m_processInfo.hProcess != INVALID_HANDLE_VALUE && m_processInfo.hThread != INVALID_HANDLE_VALUE)
+    while (m_pipeSock != INVALID_SOCKET && m_processInfo.hProcess != INVALID_HANDLE_VALUE && m_processInfo.hThread != INVALID_HANDLE_VALUE)
     {
         PollMessage();
     }

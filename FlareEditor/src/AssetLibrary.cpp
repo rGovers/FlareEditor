@@ -153,6 +153,11 @@ void AssetLibrary::Refresh(const std::filesystem::path& a_workingDir)
 
     TraverseTree(p, p);
 
+    if (!m_runtime->IsBuilt())
+    {
+        return;
+    }
+
     std::vector<const char*> assets;
     std::vector<uint32_t> sizes;
     std::vector<std::filesystem::path> paths;

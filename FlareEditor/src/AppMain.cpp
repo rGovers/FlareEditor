@@ -396,7 +396,7 @@ void AppMain::Update(double a_delta, double a_time)
 
         const std::filesystem::path path = m_project->GetPath(); 
         
-        if (m_runtime->Build(std::string(path), m_project->GetName()))
+        if (m_runtime->Build(path.string(), m_project->GetName()))
         {
             m_runtime->Start();
         }

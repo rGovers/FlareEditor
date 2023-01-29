@@ -30,9 +30,9 @@ add_custom_command(TARGET FlareEditorCS
         "${CMAKE_SOURCE_DIR}/bin/FlareEditorCS.exe"
         "${CMAKE_SOURCE_DIR}/bin/FlareEditorCS.dll")
 
-project(FlareEditorBuildEngine VERSION 0.1 LANGUAGES CSharp)
+target_link_libraries(FlareEditorCS FlareCS)
 
-include(CSharpUtilities)
+project(FlareEditorBuildEngine VERSION 0.1 LANGUAGES CSharp)
 
 file(GLOB_RECURSE SOURCES "FlareEditorBuildEngine/src/*.cs")
 

@@ -48,7 +48,7 @@ void FileHandler::GetFileData(const std::filesystem::path& a_path, FileCallback*
         return;
     }
 
-    const std::string ext = a_path.extension();
+    const std::string ext = a_path.extension().string();
 
     const auto tIter = Instance->m_extTex.find(ext);
     if (tIter != Instance->m_extTex.end())

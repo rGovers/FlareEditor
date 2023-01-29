@@ -108,7 +108,7 @@ void ProfilerWindow::Update()
     constexpr int FrameSize = sizeof(ProfileFrame);
     constexpr int ScopeSize = sizeof(ProfileScope);
 
-    for (const ProfileSnapshot snapshot : snapshots)
+    for (const ProfileSnapshot& snapshot : snapshots)
     {
         const uint32_t index = GetFrameIndex(snapshot);
         const std::vector<uint32_t> childIndices = GetChildren(index, snapshot);
@@ -146,7 +146,7 @@ void ProfilerWindow::Update()
         ImPlot::SetNextAxesToFit();
         if (ImPlot::BeginPlot(snapshot.Name.c_str()))
         {
-            ImPlot::PlotBars(frame.Name, (float*)((char*)&snapshot.Scopes + timeOff), (int)snapshot.Count, 1.0f, 0.0f, 0.0f, snapshot.StartIndex, ScopeSize);
+            ImPlot::PlotBars(frame.Name, (float*)((char*)&snapshot.Scopes + timeOff), (int)snapshot.Count, 1.0f, 0.0f, 0, snapshot.StartIndex, ScopeSize);
 
             for (uint32_t cIndex : childIndices)
             {
@@ -154,7 +154,7 @@ void ProfilerWindow::Update()
 
                 const uint32_t cTimeOff = FramesOffset + (cIndex * FrameSize) + TimeOffset;
 
-                ImPlot::PlotLine(cFrame.Name, (float*)((char*)&snapshot.Scopes + cTimeOff), (int)snapshot.Count, 1.0f, 0.0f, 0.0f, snapshot.StartIndex, ScopeSize);
+                ImPlot::PlotLine(cFrame.Name, (float*)((char*)&snapshot.Scopes + cTimeOff), (int)snapshot.Count, 1.0f, 0.0f, 0, snapshot.StartIndex, ScopeSize);
             }
 
             ImPlot::EndPlot();
