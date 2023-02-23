@@ -44,6 +44,11 @@ namespace FlareEditor
                 // Ignoring for now as I cannot think of a good way of handling it
                 return;
             }
+            case IntPtr _:
+            {
+                // Ignore pointers
+                return;
+            }
             case int val:
             {
                 if (GUI.RIntField(a_name, ref val, (int)a_normVal))
