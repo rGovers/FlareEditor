@@ -23,27 +23,36 @@ void Logger::RemoveConsoleWindow(ConsoleWindow* a_window)
     }
 }
 
-void Logger::Message(const std::string_view& a_string)
+void Logger::Message(const std::string_view& a_string, bool a_print)
 {
-    std::cout << a_string << "\n";
+    if (a_print)
+    {
+        std::cout << "FL: " << a_string << "\n";
+    }
 
     for (ConsoleWindow* console : Windows)
     {
         console->AddMessage(a_string, LoggerMessageType_Message);
     }
 }
-void Logger::Warning(const std::string_view& a_string)
+void Logger::Warning(const std::string_view& a_string, bool a_print)
 {
-    std::cout << a_string << "\n";
+    if (a_print)
+    {
+        std::cout << "FL: " << a_string << "\n";
+    }
 
     for (ConsoleWindow* console : Windows)
     {
         console->AddMessage(a_string, LoggerMessageType_Warning);
     }
 }
-void Logger::Error(const std::string_view& a_string)
+void Logger::Error(const std::string_view& a_string, bool a_print)
 {
-    std::cout << a_string << "\n";
+    if (a_print)
+    {
+        std::cout << "FL: " << a_string << "\n";
+    }
 
     for (ConsoleWindow* console : Windows)
     {

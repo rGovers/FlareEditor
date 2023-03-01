@@ -437,19 +437,19 @@ void ProcessManager::PollMessage()
         {
         case LoggerMessageType_Message:
         {
-            Logger::Message(str);
+            Logger::Message(str, false);
 
             break;
         }
         case LoggerMessageType_Warning:
         {
-            Logger::Warning(str);
+            Logger::Warning(str, false);
 
             break;
         }
         case LoggerMessageType_Error:
         {
-            Logger::Error(str);
+            Logger::Error(str, false);
 
             break;
         }
