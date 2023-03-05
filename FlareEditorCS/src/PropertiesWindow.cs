@@ -103,6 +103,15 @@ namespace FlareEditor
 
                 break;
             }
+            case Color val:
+            {
+                if (GUI.RColorField(a_name, ref val, (Color)a_normVal))
+                {
+                    a_obj = val;
+                }
+
+                break;
+            }
             case string val:
             {
                 if (GUI.RStringField(a_name, ref val, (string)a_normVal))

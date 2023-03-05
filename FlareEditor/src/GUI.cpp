@@ -101,6 +101,16 @@ FLARE_MONO_EXPORT(uint32_t, GUI_GetVec4, MonoString* a_str, glm::vec4* a_value)
 
     return (uint32_t)ret;
 }
+FLARE_MONO_EXPORT(uint32_t, GUI_GetColor, MonoString* a_str, glm::vec4* a_value)
+{
+    char* str = mono_string_to_utf8(a_str);
+
+    const bool ret = ImGui::ColorEdit4(str, (float*)a_value);
+
+    mono_free(str);
+
+    return (uint32_t)ret;
+}
 
 FLARE_MONO_EXPORT(MonoString*, GUI_GetString, MonoString* a_str, MonoString* a_value)
 {
@@ -281,6 +291,8 @@ void GUI::Init(RuntimeManager* a_runtime)
         a_runtime->BindFunction("FlareEditor.GUI::GetVec2", (void*)GUI_GetVec2);
         a_runtime->BindFunction("FlareEditor.GUI::GetVec3", (void*)GUI_GetVec3);
         a_runtime->BindFunction("FlareEditor.GUI::GetVec4", (void*)GUI_GetVec4);
+
+        a_runtime->BindFunction("FlareEditor.GUI::GetColor", (void*)GUI_GetColor);
 
         a_runtime->BindFunction("FlareEditor.GUI::GetString", (void*)GUI_GetString);
         a_runtime->BindFunction("FlareEditor.GUI::GetStringList", (void*)GUI_GetSringList);

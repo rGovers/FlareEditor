@@ -25,6 +25,8 @@ namespace FlareEditor
         extern static uint GetVec3(string a_label, IntPtr a_vec);
         [MethodImpl(MethodImplOptions.InternalCall)]
         extern static uint GetVec4(string a_label, IntPtr a_vec);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        extern static uint GetColor(string a_label, IntPtr a_vec);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         extern static string GetString(string a_label, string a_str);
@@ -302,6 +304,41 @@ namespace FlareEditor
             {
                 ret = true;
                 a_vec = (Vector4)handle.Target;
+            }
+
+            handle.Free();
+
+            return ret;
+        }
+        public static bool RColorField(string a_label, ref Color a_color, Color a_default = default(Color))
+        {
+            bool ret = false;
+            if (a_color != a_default)
+            {
+                if (ResetButton(a_label + "_R") != 0)
+                {
+                    ret = true;
+                    a_color = a_default;
+                }
+            }
+
+            if (ColorField(a_label, ref a_color))
+            {
+                ret = true;
+            }
+
+            return ret;
+        }
+        public static bool ColorField(string a_label , ref Color a_color)
+        {
+            Vector4 vec = a_color.ToVector4();
+            GCHandle handle = GCHandle.Alloc(vec, GCHandleType.Pinned);
+
+            bool ret = false;
+            if (GetColor(a_label, handle.AddrOfPinnedObject()) != 0)
+            {
+                ret = true;
+                a_color = vec.ToColor();
             }
 
             handle.Free();
