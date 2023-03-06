@@ -16,6 +16,7 @@
 class ProcessManager
 {
 private:
+    static constexpr uint32_t TextureCount = 2;
     static constexpr std::string_view PipeName = "FlareEngine-IPC";
 
 #if WIN32
@@ -45,7 +46,8 @@ private:
     double              m_frameTime;
     double              m_fps;
                         
-    GLuint              m_tex;
+    GLuint*             m_tex;
+    uint32_t            m_curTex;
 
     PipeMessage ReceiveMessage();
     void PushMessage(const PipeMessage& a_message) const;
@@ -70,7 +72,7 @@ public:
 
     inline GLuint GetImage() const
     {
-        return m_tex;
+        return m_tex[m_curTex];
     }
 
     inline uint32_t GetWidth()

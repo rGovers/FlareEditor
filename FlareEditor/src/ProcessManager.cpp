@@ -28,6 +28,13 @@ ProcessManager::ProcessManager()
 {
     const std::filesystem::path addrStr = GetAddr(PipeName);
 
+    m_tex = new GLuint[TextureCount];
+    for (uint32_t i = 0; i < TextureCount; ++i)
+    {
+        m_tex[i] = -1;
+    }
+    m_curTex = 0;
+
 #if WIN32
     m_pipeSock = INVALID_SOCKET;
 
@@ -64,6 +71,16 @@ ProcessManager::ProcessManager()
         perror("bind");
         assert(0);
     }
+
+    glGenTextures(1, &m_tex);
+    glBindTexture(GL_TEXTURE_2D, m_tex);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)m_width, (GLsizei)m_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 #else
     m_pipeSock = -1;
     m_process = -1;   
@@ -105,16 +122,6 @@ ProcessManager::ProcessManager()
     m_width = 1280;
     m_height = 720;
 
-    glGenTextures(1, &m_tex);
-    glBindTexture(GL_TEXTURE_2D, m_tex);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)m_width, (GLsizei)m_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
     m_fps = 0.0;
     m_frameTime = 0.0;
     m_frames = 0;
@@ -125,7 +132,13 @@ ProcessManager::ProcessManager()
 }   
 ProcessManager::~ProcessManager()
 {
-    glDeleteTextures(1, &m_tex);
+    for (uint32_t i = 0; i < TextureCount; ++i)
+    {
+        if (m_tex[i] != -1)
+        {
+            glDeleteTextures(1, &m_tex[i]);
+        }
+    }
 
 #if WIN32
     closesocket(m_serverSock);
@@ -385,11 +398,13 @@ void ProcessManager::PollMessage()
     {
     case PipeMessageType_PushFrame:
     {
+#if WIN32
         if (msg.Length == m_width * m_height * 4)
         {
             glBindTexture(GL_TEXTURE_2D, m_tex);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)m_width, (GLsizei)m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, msg.Data);
         }
+#endif
 
         break;
     }
@@ -407,6 +422,35 @@ void ProcessManager::PollMessage()
             m_frameTime += 0.5;
             m_frames = 0;
         }
+
+        break;
+    }
+    case PipeMessageType_PushTextureHandle:
+    {
+        const int fd = *(int*)(msg.Data + 0);
+        const uint64_t size = *(uint64_t*)(msg.Data + 4);
+        const int32_t slot = *(int32_t*)(msg.Data + 12);
+        const uint64_t offset = *(uint64_t*)(msg.Data + 16);
+
+        if (m_tex[slot] != -1)
+        {
+            glDeleteTextures(1, &m_tex[slot]);
+
+            m_tex[slot] = -1;
+        }
+
+        GLuint memory;
+        glCreateMemoryObjectsEXT(1, &memory);
+
+        glImportMemoryFdEXT(memory, (GLuint64)size, GL_HANDLE_TYPE_OPAQUE_FD_EXT, (GLint)fd);
+
+        glCreateTextures(GL_TEXTURE_2D, 1, &m_tex[slot]);
+        glTextureStorageMem2DEXT(m_tex[slot], 1, GL_RGBA, m_width, m_height, memory, offset);
+
+        glTextureParameteri(m_tex[slot], GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTextureParameteri(m_tex[slot], GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTextureParameteri(m_tex[slot], GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTextureParameteri(m_tex[slot], GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
         break;
     }
@@ -431,7 +475,7 @@ void ProcessManager::PollMessage()
     {
         constexpr uint32_t TypeSize = sizeof(e_LoggerMessageType);
 
-        const std::string_view str = std::string_view(msg.Data + TypeSize, msg.Length - TypeSize);
+        const std::string_view str = std::string_view((char*)msg.Data + TypeSize, msg.Length - TypeSize);
 
         switch (*(e_LoggerMessageType*)msg.Data)
         {

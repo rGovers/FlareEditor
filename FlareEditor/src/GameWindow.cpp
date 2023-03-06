@@ -21,5 +21,9 @@ void GameWindow::Update()
 
     m_processManager->SetSize((uint32_t)size.x, (uint32_t)size.y);
     
-    ImGui::Image((ImTextureID)m_processManager->GetImage(), size);
+    GLuint texHandle = m_processManager->GetImage();
+    if (texHandle != -1)
+    {
+        ImGui::Image((ImTextureID)texHandle, size);
+    }
 }
