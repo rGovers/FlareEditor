@@ -1,5 +1,8 @@
 #pragma once
 
+#define GLM_FORCE_SWIZZLE 
+#include <glm/glm.hpp>
+
 #include "PipeMessage.h"
 
 #if WIN32
@@ -92,6 +95,9 @@ public:
     }
 
     void SetSize(uint32_t a_width, uint32_t a_height);
+   
+    void PushCursorPos(const glm::vec2& a_cPos) const;
+    void PushMouseState(unsigned char a_state) const;
 
     bool Start(const std::filesystem::path& a_workingDir);
     void Update();

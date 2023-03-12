@@ -27,7 +27,7 @@ FileToHeader(
     VARIABLE_NAME "AssemblyControlTemplateCS"
 )
 
-include_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/cpp/Headless/"
+include_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/cpp/Shared/"
                     "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/mono/build/include/mono-2.0/"
                     "${PROJECT_SOURCE_DIR}/include/"
                     "${PROJECT_SOURCE_DIR}/lib/glad/include/"

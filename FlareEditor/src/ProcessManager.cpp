@@ -495,6 +495,8 @@ void ProcessManager::Update()
 {
     if (!IsRunning())
     {
+        m_process = -1;
+
         return;
     }
 
@@ -582,5 +584,19 @@ void ProcessManager::SetSize(uint32_t a_width, uint32_t a_height)
         m_height = a_height;
 
         m_resize = true;
+    }
+}
+void ProcessManager::PushCursorPos(const glm::vec2& a_cPos) const
+{
+    if (IsRunning())
+    {
+        PushMessage({ PipeMessageType_CursorPos, sizeof(glm::vec2), (char*)&a_cPos});
+    }
+}
+void ProcessManager::PushMouseState(unsigned char a_state) const
+{
+    if (IsRunning())
+    {
+        PushMessage({ PipeMessageType_MouseState, sizeof(unsigned char), (char*)&a_state });
     }
 }
