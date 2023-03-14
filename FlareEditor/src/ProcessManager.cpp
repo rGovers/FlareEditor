@@ -495,7 +495,12 @@ void ProcessManager::Update()
 {
     if (!IsRunning())
     {
+#if WIN32
+        m_processInfo.hProcess = INVALID_HANDLE_VALUE;
+        m_processInfo.hThread = INVALID_HANDLE_VALUE;
+#else
         m_process = -1;
+#endif
 
         return;
     }
