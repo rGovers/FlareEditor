@@ -29,6 +29,11 @@ FileToHeader(
     HEADER_FILE "include/Templates/AssemblyControlCS.h" 
     VARIABLE_NAME "AssemblyControlTemplateCS"
 )
+FileToHeader(
+    SOURCE_FILE "templates/about.xml"
+    HEADER_FILE "include/Templates/About.h"
+    VARIABLE_NAME "AboutTemplate"
+)
 
 include_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/cpp/Shared/"
                     "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-glfw/include/"

@@ -9,8 +9,9 @@ class RuntimeManager;
 enum e_AssetType
 {
     AssetType_Null = -1,
-    AssetType_Script,
+    AssetType_About,
     AssetType_Def,
+    AssetType_Script,
     AssetType_Other
 };
 

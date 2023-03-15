@@ -78,6 +78,8 @@ void AssetLibrary::TraverseTree(const std::filesystem::path& a_path, const std::
             asset.Path = GetRelativePath(a_workingDir, iter.path());
 
             const std::filesystem::path ext = asset.Path.extension();
+            const std::filesystem::path name = asset.Path.filename();
+
             if (ext == ".cs")
             {
                 asset.AssetType = AssetType_Script;
@@ -85,6 +87,10 @@ void AssetLibrary::TraverseTree(const std::filesystem::path& a_path, const std::
             else if (ext == ".def")
             {
                 asset.AssetType = AssetType_Def;
+            }
+            else if (name == "about.xml")
+            {
+                asset.AssetType == AssetType_About;
             }
             else
             {
@@ -208,14 +214,35 @@ void AssetLibrary::BuildDirectory(const std::filesystem::path& a_path) const
     {
         switch (asset.AssetType)
         {
-        case AssetType_Script:
+        case AssetType_About:
         {
-            continue;
+            const std::filesystem::path p = a_path / "Core" / "about.xml";
+
+            std::filesystem::create_directories(p.parent_path());
+
+            std::ofstream file = std::ofstream(p, std::ios_base::binary);
+            if (file.good() && file.is_open())
+            {
+                file.write(asset.Data, asset.Size);
+
+                file.close();
+            }
+            else
+            {
+                Logger::Warning("Failed writing about: " + p.string());
+            }
+
+            break;
         }
         case AssetType_Def:
         {
-            const std::filesystem::path p = a_path / "Core" / "Defs" / asset.Path;
-            
+            std::filesystem::path p = a_path / "Core" / "Defs" / asset.Path;
+
+            if (asset.Path.parent_path() == "Defs")
+            {
+                p = a_path / "Core" / asset.Path;
+            }
+
             std::filesystem::create_directories(p.parent_path());
 
             std::ofstream file = std::ofstream(p, std::ios_base::binary);
@@ -231,6 +258,10 @@ void AssetLibrary::BuildDirectory(const std::filesystem::path& a_path) const
             }
 
             break;
+        }
+        case AssetType_Script:
+        {
+            continue;
         }
         case AssetType_Other:
         {

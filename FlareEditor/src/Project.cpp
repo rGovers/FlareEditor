@@ -12,6 +12,7 @@
 #include "Modals/ErrorModal.h"
 #include "Modals/OpenProjectModal.h"
 #include "TemplateBuilder.h"
+#include "Templates/About.h"
 #include "Templates/AssemblyControlCS.h"
 
 static void GenerateDirs(const std::filesystem::path& a_path)
@@ -90,6 +91,17 @@ void Project::NewCallback(const std::filesystem::path& a_path, const std::string
     else
     {
         Logger::Error("Unable to create Assembly Control");
+    }
+
+    std::ofstream aboutStream = std::ofstream(m_path / "Project" / "about.xml");
+    if (aboutStream.good() && aboutStream.is_open())
+    {
+        aboutStream << TemplateBuilder::GenerateFromTemplate(ABOUTTEMPLATE, a_name, "about");
+        aboutStream.close();
+    }
+    else
+    {
+        Logger::Error("Unable to create About");
     }
 }
 void Project::OpenCallback(const std::filesystem::path& a_path, const std::string_view& a_name)
