@@ -1,18 +1,9 @@
 [submodule "FlareEngine"]
 	path = FlareEngine
 	url = https://github.com/rGovers/FlareEngine.git
-[submodule "FlareEditor/lib/glfw"]
-	path = FlareEditor/lib/glfw
-	url = https://github.com/glfw/glfw.git
 [submodule "FlareEditor/lib/imgui"]
 	path = FlareEditor/lib/imgui
 	url = https://github.com/ocornut/imgui.git
-[submodule "FlareEditor/lib/glm"]
-	path = FlareEditor/lib/glm
-	url = https://github.com/g-truc/glm.git
-[submodule "FlareEditor/lib/tinyxml2"]
-	path = FlareEditor/lib/tinyxml2
-	url = https://github.com/leethomason/tinyxml2.git
 [submodule "FlareEditor/lib/stb"]
 	path = FlareEditor/lib/stb
 	url = https://github.com/nothings/stb.git

@@ -17,6 +17,9 @@ configure_file(
     "${PROJECT_SOURCE_DIR}/include/FlareEditorConfig.h"
 )
 
+add_compile_definitions(GLM_FORCE_QUAT_DATA_XYZW)
+add_compile_definitions(GLM_FORCE_RADIANS)
+
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/modules")
 
 include("FileToHeader")
@@ -28,20 +31,28 @@ FileToHeader(
 )
 
 include_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/cpp/Shared/"
-                    "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/mono/build/include/mono-2.0/"
+                    "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-glfw/include/"
+                    "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-glm/"
+                    "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-mono/build/include/mono-2.0/"
+                    "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-tinyxml2/"
                     "${PROJECT_SOURCE_DIR}/include/"
                     "${PROJECT_SOURCE_DIR}/lib/glad/include/"
-                    "${PROJECT_SOURCE_DIR}/lib/glfw/include/"
-                    "${PROJECT_SOURCE_DIR}/lib/glm/"
                     "${PROJECT_SOURCE_DIR}/lib/imgui/"
                     "${PROJECT_SOURCE_DIR}/lib/imgui/backends/"
                     "${PROJECT_SOURCE_DIR}/lib/implot/"
-                    "${PROJECT_SOURCE_DIR}/lib/stb/"
-                    "${PROJECT_SOURCE_DIR}/lib/tinyxml2/")
+                    "${PROJECT_SOURCE_DIR}/lib/stb/")
 
-file(GLOB SOURCES "src/*.cpp" "lib/glad/src/*.c" "lib/imgui/*.cpp" "lib/imgui/backends/imgui_impl_opengl3.cpp" "lib/imgui/backends/imgui_impl_glfw.cpp" "lib/implot/implot.cpp" "lib/implot/implot_items.cpp" "lib/tinyxml2/tinyxml2.cpp")
+file(GLOB SOURCES 
+    "src/*.cpp" 
+    "../FlareEngine/deps/flare-tinyxml2/tinyxml2.cpp"
+    "lib/glad/src/*.c" 
+    "lib/imgui/*.cpp" 
+    "lib/imgui/backends/imgui_impl_opengl3.cpp" 
+    "lib/imgui/backends/imgui_impl_glfw.cpp" 
+    "lib/implot/implot.cpp" 
+    "lib/implot/implot_items.cpp")
 
-add_subdirectory("lib/glfw")
+add_subdirectory("${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-glfw" "build/glfw")
 
 link_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/deps/mono/build/lib/")
 

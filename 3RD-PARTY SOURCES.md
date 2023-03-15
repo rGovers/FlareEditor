@@ -1,0 +1,25 @@
+# Dependencies
+
+## Internal
+
+### glad
+Original Project:
+
+https://glad.dav1d.de/
+
+https://github.com/Dav1dde/glad
+
+### Dear ImGui
+Original Project:
+
+https://github.com/ocornut/imgui
+
+### ImPlot
+Original Project:
+
+https://github.com/epezent/implot
+
+### stb
+Original Project:
+
+https://github.com/nothings/stb

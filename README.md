@@ -12,7 +12,7 @@ The editor for Flare Engine.
 Requires cygwin for compiling Mono. 
 Refer to the following for requirements https://www.mono-project.com/docs/compiling-mono/windows/ 
 
-Enter the mono directory in FlareEngine/deps/mono/ and run the following commands to build mono 
+Enter the mono directory in FlareEngine/deps/flare-mono/ and run the following commands to build mono 
 ```
 ./autogen.sh
 ./configure --prefix=$PWD/build --host=x86_64-w64-mingw32 --disable-boehm --enable-msvc
