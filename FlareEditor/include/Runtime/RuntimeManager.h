@@ -10,6 +10,15 @@
 #define FLARE_MONO_EXPORT(ret, func, ...) static ret func(__VA_ARGS__)
 #endif
 
+#define RUNTIME_FUNCTION_NAME(klass, name) MRF_##klass##_##name
+#define RUNTIME_FUNCTION_STRING(namespace, klass, name) #namespace "." #klass "::" #name
+
+#define RUNTIME_FUNCTION(ret, klass, name, code, ...) FLARE_MONO_EXPORT(ret, RUNTIME_FUNCTION_NAME(klass, name), __VA_ARGS__) code
+
+#define RUNTIME_FUNCTION_DEFINITION(ret, namespace, klass, name, code, ...) RUNTIME_FUNCTION(ret, klass, name, code, __VA_ARGS__)
+
+#define BIND_FUNCTION(runtime, namespace, klass, name) runtime->BindFunction(RUNTIME_FUNCTION_STRING(namespace, klass, name), (void*)RUNTIME_FUNCTION_NAME(klass, name))
+
 class RuntimeManager
 {
 private:

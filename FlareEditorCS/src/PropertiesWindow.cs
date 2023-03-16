@@ -49,6 +49,37 @@ namespace FlareEditor
                 // Ignore pointers
                 return;
             }
+            case bool val:
+            {   
+                if (GUI.RCheckbox(a_name, ref val, (bool)a_normVal))
+                {
+                    a_obj = (bool)val;
+                }
+
+                break;
+            }
+            case short val:
+            {
+                short nVal = (short)a_normVal;
+                int sVal = (int)val;
+                if (GUI.RIntField(a_name, ref sVal, (int)nVal))
+                {
+                    a_obj = (short)sVal;
+                }
+
+                break;
+            }
+            case ushort val:
+            {
+                ushort nVal = (ushort)a_normVal;
+                uint sVal = (uint)val;
+                if (GUI.RUIntField(a_name, ref sVal, (uint)nVal))
+                {
+                    a_obj = (ushort)sVal;
+                }
+
+                break;
+            }
             case int val:
             {
                 if (GUI.RIntField(a_name, ref val, (int)a_normVal))
@@ -163,6 +194,7 @@ namespace FlareEditor
                     if (show && a != null)
                     {
                         GUI.Indent();
+                        GUI.PushID(a_name);
 
                         object eNVal = Activator.CreateInstance(eType);
 
@@ -174,6 +206,7 @@ namespace FlareEditor
                             a.SetValue(o, i);
                         }
 
+                        GUI.PopID();
                         GUI.Unindent();
                     }
 
@@ -202,6 +235,7 @@ namespace FlareEditor
                     if (show && a_obj != null)
                     {
                         GUI.Indent();
+                        GUI.PushID(a_name);
 
                         object nObj = Activator.CreateInstance(a_type);
 
@@ -216,6 +250,7 @@ namespace FlareEditor
 
                         a_obj = nObj;
 
+                        GUI.PopID();
                         GUI.Unindent();
                     }
                 }
@@ -229,6 +264,7 @@ namespace FlareEditor
                     if (GUI.StructView(a_name))
                     {
                         GUI.Indent();
+                        GUI.PushID(a_name);
 
                         FieldInfo[] fields = a_type.GetFields();
                         foreach (FieldInfo field in fields)
@@ -246,6 +282,7 @@ namespace FlareEditor
                             field.SetValue(a_obj, val);
                         }
 
+                        GUI.PopID();
                         GUI.Unindent();
                     }
                 }

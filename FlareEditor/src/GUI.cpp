@@ -11,23 +11,55 @@ static GUI* Instance = nullptr;
 
 static constexpr uint32_t BufferSize = 4096;
 
-FLARE_MONO_EXPORT(MonoString*, GUI_GetDef, MonoString* a_str, MonoString* a_preview, MonoString* a_value)
+struct IDStack
+{
+    IDStack(const std::string_view& a_id)
+    {
+        ImGui::PushID(a_id.data());
+    }
+    ~IDStack()
+    {
+        ImGui::PopID();
+    }
+};
+
+#define STACK_ID(str) const IDStack idStackTVal = IDStack(str)
+#define STACK_G_ID(str) STACK_ID(Instance->GetID() + (str))
+
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, GetCheckbox), MonoString* a_str, uint32_t* a_value)
+{
+    char* str = mono_string_to_utf8(a_str);
+
+    bool b = (bool)*a_value;
+
+    STACK_G_ID(str);
+    bool ret = false;
+    if (ImGui::Checkbox(str, &b))
+    {
+        ret = true;
+        *a_value = (uint32_t)b;
+    }
+
+    return ret;
+}
+FLARE_MONO_EXPORT(MonoString*, RUNTIME_FUNCTION_NAME(GUI, GetDef), MonoString* a_str, MonoString* a_preview, MonoString* a_value)
 {
     char* str = mono_string_to_utf8(a_str);
     char* preview = mono_string_to_utf8(a_preview);
     char* val = mono_string_to_utf8(a_value);
 
     MonoString* outBuff = nullptr;
+    STACK_G_ID(str);
     if (ImGui::Button(preview))
     {
         Logger::Error("Not implemented use drag and drop");
     }
+    
     if (ImGui::BeginDragDropTarget())
     {
         const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DefPath");
         if (payload != nullptr)
         {
-            const RuntimeManager* runtime = Instance->GetRuntime();
             outBuff = mono_string_from_utf32((mono_unichar4*)payload->Data);
         } 
 
@@ -39,20 +71,22 @@ FLARE_MONO_EXPORT(MonoString*, GUI_GetDef, MonoString* a_str, MonoString* a_prev
     return outBuff;
 }
 
-FLARE_MONO_EXPORT(uint32_t, GUI_GetInt, MonoString* a_str, int32_t* a_value)
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, GetInt), MonoString* a_str, int32_t* a_value)
 {
     char* str = mono_string_to_utf8(a_str);
-
+    
+    STACK_G_ID(str);
     const bool ret = ImGui::InputInt(str, (int*)a_value);
 
     mono_free(str);
 
     return (uint32_t)ret;
 }
-FLARE_MONO_EXPORT(uint32_t, GUI_GetUInt, MonoString* a_str, uint32_t* a_value)
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, GetUInt), MonoString* a_str, uint32_t* a_value)
 {
     char* str = mono_string_to_utf8(a_str);
 
+    STACK_G_ID(str);
     const bool ret = ImGui::InputInt(str, (int*)a_value);
 
     mono_free(str);
@@ -60,10 +94,11 @@ FLARE_MONO_EXPORT(uint32_t, GUI_GetUInt, MonoString* a_str, uint32_t* a_value)
     return (uint32_t)ret;
 }
 
-FLARE_MONO_EXPORT(uint32_t, GUI_GetFloat, MonoString* a_str, float* a_value)
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, GetFloat), MonoString* a_str, float* a_value)
 {
     char* str = mono_string_to_utf8(a_str);
 
+    STACK_G_ID(str);
     const bool ret = ImGui::DragFloat(str, a_value);
 
     mono_free(str);
@@ -71,40 +106,44 @@ FLARE_MONO_EXPORT(uint32_t, GUI_GetFloat, MonoString* a_str, float* a_value)
     return (uint32_t)ret;
 }
 
-FLARE_MONO_EXPORT(uint32_t, GUI_GetVec2, MonoString* a_str, glm::vec2* a_value)
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, GetVec2), MonoString* a_str, glm::vec2* a_value)
 {
     char* str = mono_string_to_utf8(a_str);
 
+    STACK_G_ID(str);
     const bool ret = ImGui::DragFloat2(str, (float*)a_value);
 
     mono_free(str);
 
     return (uint32_t)ret;
 }
-FLARE_MONO_EXPORT(uint32_t, GUI_GetVec3, MonoString* a_str, glm::vec3* a_value)
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, GetVec3), MonoString* a_str, glm::vec3* a_value)
 {
     char* str = mono_string_to_utf8(a_str);
 
+    STACK_G_ID(str);
     const bool ret = ImGui::DragFloat3(str, (float*)a_value);
 
     mono_free(str);
 
     return (uint32_t)ret;
 }
-FLARE_MONO_EXPORT(uint32_t, GUI_GetVec4, MonoString* a_str, glm::vec4* a_value)
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, GetVec4), MonoString* a_str, glm::vec4* a_value)
 {
     char* str = mono_string_to_utf8(a_str);
 
+    STACK_G_ID(str);
     const bool ret = ImGui::DragFloat4(str, (float*)a_value);
 
     mono_free(str);
 
     return (uint32_t)ret;
 }
-FLARE_MONO_EXPORT(uint32_t, GUI_GetColor, MonoString* a_str, glm::vec4* a_value)
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, GetColor), MonoString* a_str, glm::vec4* a_value)
 {
     char* str = mono_string_to_utf8(a_str);
-
+    
+    STACK_G_ID(str);
     const bool ret = ImGui::ColorEdit4(str, (float*)a_value);
 
     mono_free(str);
@@ -112,7 +151,7 @@ FLARE_MONO_EXPORT(uint32_t, GUI_GetColor, MonoString* a_str, glm::vec4* a_value)
     return (uint32_t)ret;
 }
 
-FLARE_MONO_EXPORT(MonoString*, GUI_GetString, MonoString* a_str, MonoString* a_value)
+FLARE_MONO_EXPORT(MonoString*, RUNTIME_FUNCTION_NAME(GUI, GetString), MonoString* a_str, MonoString* a_value)
 {
     char buffer[BufferSize];
 
@@ -121,6 +160,7 @@ FLARE_MONO_EXPORT(MonoString*, GUI_GetString, MonoString* a_str, MonoString* a_v
     
     MonoString* outBuff = nullptr;
 
+    STACK_G_ID(str);
     strncpy(buffer, str, BufferSize - 1);
     if (ImGui::InputText(label, buffer, BufferSize))
     {
@@ -135,7 +175,7 @@ FLARE_MONO_EXPORT(MonoString*, GUI_GetString, MonoString* a_str, MonoString* a_v
     return outBuff;
 }
 
-FLARE_MONO_EXPORT(uint32_t, GUI_GetSringList, MonoString* a_str, MonoArray* a_list, int32_t* a_selected)
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, GetStringList), MonoString* a_str, MonoArray* a_list, int32_t* a_selected)
 {
     char* str = mono_string_to_utf8(a_str);
     const uintptr_t size = mono_array_length(a_list);
@@ -147,7 +187,14 @@ FLARE_MONO_EXPORT(uint32_t, GUI_GetSringList, MonoString* a_str, MonoArray* a_li
     char* selectedStr = mono_string_to_utf8(mono_array_get(a_list, MonoString*, *a_selected));
 
     bool ret = false;
-    if (ImGui::BeginCombo(str, selectedStr))
+    bool combo = false;
+
+    {
+        STACK_G_ID(str);
+        combo = ImGui::BeginCombo(str, selectedStr);
+    }   
+    
+    if (combo)
     {
         for (int32_t i = 0; i < size; ++i)
         {
@@ -155,6 +202,7 @@ FLARE_MONO_EXPORT(uint32_t, GUI_GetSringList, MonoString* a_str, MonoArray* a_li
 
             char* selectableStr = mono_string_to_utf8(mono_array_get(a_list, MonoString*, i));
 
+            STACK_G_ID(std::string(str) + "[" + std::to_string(i) + "]");
             if (ImGui::Selectable(selectableStr, selected))
             {
                 *a_selected = i;
@@ -178,10 +226,11 @@ FLARE_MONO_EXPORT(uint32_t, GUI_GetSringList, MonoString* a_str, MonoArray* a_li
     return ret;
 }
 
-FLARE_MONO_EXPORT(uint32_t, GUI_ResetButton, MonoString* a_str)
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, ResetButton), MonoString* a_str)
 {
     char* str = mono_string_to_utf8(a_str);
 
+    STACK_G_ID(str);
     bool ret = FlareImGui::ImageButton(str, "Textures/Icons/Icon_Reset.png", glm::vec2(16.0f));
 
     ImGui::SameLine();
@@ -191,16 +240,16 @@ FLARE_MONO_EXPORT(uint32_t, GUI_ResetButton, MonoString* a_str)
     return (uint32_t)ret;
 }
 
-FLARE_MONO_EXPORT(void, GUI_Indent)
+FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(GUI, Indent))
 {
     ImGui::Indent();
 }
-FLARE_MONO_EXPORT(void, GUI_Unindent)
+FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(GUI, Unindent))
 {
     ImGui::Unindent();
 }
 
-FLARE_MONO_EXPORT(void, GUI_Tooltip, MonoString* a_title, MonoString* a_str)
+FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(GUI, Tooltip), MonoString* a_title, MonoString* a_str)
 {
     char* title = mono_string_to_utf8(a_title);
     char* str = mono_string_to_utf8(a_str);
@@ -231,11 +280,13 @@ FLARE_MONO_EXPORT(void, GUI_Tooltip, MonoString* a_title, MonoString* a_str)
     mono_free(str);
 }
 
-FLARE_MONO_EXPORT(uint32_t, GUI_ShowStructView, MonoString* a_str)
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, ShowStructView), MonoString* a_str)
 {
     bool ret = false;
 
     char* str = mono_string_to_utf8(a_str);
+
+    STACK_G_ID(str);
     if (ImGui::CollapsingHeader(str))
     {
         ret = true;
@@ -245,18 +296,21 @@ FLARE_MONO_EXPORT(uint32_t, GUI_ShowStructView, MonoString* a_str)
 
     return (uint32_t)ret;
 }
-FLARE_MONO_EXPORT(uint32_t, GUI_ShowArrayView, MonoString* a_str, uint32_t* a_addValue)
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, ShowArrayView), MonoString* a_str, uint32_t* a_addValue)
 {
     bool ret = false;
 
     char* str = mono_string_to_utf8(a_str);
 
-    ImGui::PushID((std::string(str) + "_Add").c_str());
-    *a_addValue = (uint32_t)ImGui::Button("+");
-    ImGui::PopID();
+    {
+        STACK_G_ID(std::string(str) + "_Add");
+        *a_addValue = (uint32_t)ImGui::Button("+");
+    }
+    
 
     ImGui::SameLine();
     
+    STACK_G_ID(str);
     if (ImGui::CollapsingHeader(str))
     {
         ret = true;
@@ -265,6 +319,19 @@ FLARE_MONO_EXPORT(uint32_t, GUI_ShowArrayView, MonoString* a_str, uint32_t* a_ad
     mono_free(str);
 
     return (uint32_t)ret;
+}
+
+FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(GUI, PushID), MonoString* a_str)
+{
+    char* str = mono_string_to_utf8(a_str);
+
+    Instance->PushID(str);
+
+    mono_free(str);
+}
+FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(GUI, PopID))
+{
+    Instance->PopID();
 }
 
 GUI::GUI(RuntimeManager* a_runtime)
@@ -281,31 +348,36 @@ void GUI::Init(RuntimeManager* a_runtime)
     if (Instance == nullptr)
     {
         Instance = new GUI(a_runtime);
+        
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, GetCheckbox);
 
-        a_runtime->BindFunction("FlareEditor.GUI::GetDef", (void*)GUI_GetDef);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, GetDef);
 
-        a_runtime->BindFunction("FlareEditor.GUI::GetInt", (void*)GUI_GetInt);
-        a_runtime->BindFunction("FlareEditor.GUI::GetUInt", (void*)GUI_GetUInt);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, GetInt);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, GetUInt);
 
-        a_runtime->BindFunction("FlareEditor.GUI::GetFloat", (void*)GUI_GetFloat);
-        a_runtime->BindFunction("FlareEditor.GUI::GetVec2", (void*)GUI_GetVec2);
-        a_runtime->BindFunction("FlareEditor.GUI::GetVec3", (void*)GUI_GetVec3);
-        a_runtime->BindFunction("FlareEditor.GUI::GetVec4", (void*)GUI_GetVec4);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, GetFloat);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, GetVec2);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, GetVec3);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, GetVec4);
 
-        a_runtime->BindFunction("FlareEditor.GUI::GetColor", (void*)GUI_GetColor);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, GetColor);
 
-        a_runtime->BindFunction("FlareEditor.GUI::GetString", (void*)GUI_GetString);
-        a_runtime->BindFunction("FlareEditor.GUI::GetStringList", (void*)GUI_GetSringList);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, GetString);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, GetStringList);
 
-        a_runtime->BindFunction("FlareEditor.GUI::ResetButton", (void*)GUI_ResetButton);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, ResetButton);
 
-        a_runtime->BindFunction("FlareEditor.GUI::Indent", (void*)GUI_Indent);
-        a_runtime->BindFunction("FlareEditor.GUI::Unindent", (void*)GUI_Unindent);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, Indent);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, Unindent);
 
-        a_runtime->BindFunction("FlareEditor.GUI::ShowStructView", (void*)GUI_ShowStructView);
-        a_runtime->BindFunction("FlareEditor.GUI::ShowArrayView", (void*)GUI_ShowArrayView);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, ShowStructView);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, ShowArrayView);
 
-        a_runtime->BindFunction("FlareEditor.GUI::Tooltip", (void*)GUI_Tooltip);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, Tooltip);
+
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, PushID);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, PopID);
     }
 }
 void GUI::Destroy()
@@ -315,4 +387,16 @@ void GUI::Destroy()
         delete Instance;
         Instance = nullptr;
     }
+}
+
+std::string GUI::GetID() const
+{
+    std::string str;
+
+    for (const std::string& s : Instance->m_id)
+    {
+        str += s;
+    }
+
+    return str;
 }

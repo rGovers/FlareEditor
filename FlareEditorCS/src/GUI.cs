@@ -10,6 +10,9 @@ namespace FlareEditor
     public class GUI
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
+        extern static uint GetCheckbox(string a_label, IntPtr a_bool);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         extern static string GetDef(string a_label, string a_preview, string a_path);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -49,6 +52,53 @@ namespace FlareEditor
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern static void Tooltip(string a_title, string a_str);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern static void PushID(string a_id);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern static void PopID();
+
+        public static bool RCheckbox(string a_label, ref bool a_value, bool a_default)
+        {
+            bool ret = false;
+            if (a_value != a_default)
+            {
+                if (ResetButton(a_label + "_R") != 0)
+                {
+                    a_value = a_default;
+
+                    ret = true;
+                }
+            }
+
+            if (Checkbox(a_label, ref a_value))
+            {
+                ret = true;
+            }
+
+            return ret;
+        }
+        public static bool Checkbox(string a_label, ref bool a_value)
+        {
+            uint bInt = 0;
+            if (a_value)
+            {
+                bInt = 1;
+            }
+
+            GCHandle handle = GCHandle.Alloc(bInt, GCHandleType.Pinned);
+
+            bool ret = false;
+            if (GetCheckbox(a_label, handle.AddrOfPinnedObject()) != 0)
+            {
+                ret = true;
+                a_value = (uint)handle.Target != 0;
+            }
+
+            handle.Free();
+
+            return ret;
+        }
 
         public static bool REnumField(string a_label, ref object a_enum, object a_default)
         {
