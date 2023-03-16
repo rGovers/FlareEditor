@@ -11,6 +11,7 @@ enum e_AssetType
     AssetType_Null = -1,
     AssetType_About,
     AssetType_Def,
+    AssetType_Scribe,
     AssetType_Script,
     AssetType_Other
 };
@@ -26,7 +27,7 @@ struct Asset
 class AssetLibrary
 {
 private:
-    RuntimeManager* m_runtime;
+    RuntimeManager*  m_runtime;
 
     std::list<Asset> m_assets;
 

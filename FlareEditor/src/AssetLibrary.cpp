@@ -88,6 +88,10 @@ void AssetLibrary::TraverseTree(const std::filesystem::path& a_path, const std::
             {
                 asset.AssetType = AssetType_Def;
             }
+            else if (ext == ".scrb")
+            {
+                asset.AssetType = AssetType_Scribe;
+            }
             else if (name == "about.xml")
             {
                 asset.AssetType == AssetType_About;
@@ -237,8 +241,8 @@ void AssetLibrary::BuildDirectory(const std::filesystem::path& a_path) const
         case AssetType_Def:
         {
             std::filesystem::path p = a_path / "Core" / "Defs" / asset.Path;
-
-            if (asset.Path.parent_path() == "Defs")
+            
+            if (asset.Path.begin()->string() == "Defs")
             {
                 p = a_path / "Core" / asset.Path;
             }
@@ -262,6 +266,31 @@ void AssetLibrary::BuildDirectory(const std::filesystem::path& a_path) const
         case AssetType_Script:
         {
             continue;
+        }
+        case AssetType_Scribe:
+        {
+            std::filesystem::path p = a_path / "Core" / "Scribe" / asset.Path;
+
+            if (asset.Path.begin()->string() == "Scribe")
+            {
+                p = a_path / "Core" / asset.Path;
+            }
+
+            std::filesystem::create_directories(p.parent_path());
+
+            std::ofstream file = std::ofstream(p, std::ios_base::binary);
+            if (file.good() && file.is_open())
+            {
+                file.write(asset.Data, asset.Size);
+
+                file.close();
+            }
+            else
+            {
+                Logger::Warning("Failed writing scribe file: " + p.string());
+            }
+
+            break;
         }
         case AssetType_Other:
         {
