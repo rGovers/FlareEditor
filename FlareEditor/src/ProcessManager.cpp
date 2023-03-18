@@ -605,7 +605,7 @@ void ProcessManager::PushMouseState(unsigned char a_state) const
         PushMessage({ PipeMessageType_MouseState, sizeof(unsigned char), (char*)&a_state });
     }
 }
-void ProcessManager::PushKeyboardState(const KeyboardState& a_state) const
+void ProcessManager::PushKeyboardState(KeyboardState& a_state) const
 {
     if (IsRunning())
     {

@@ -8,7 +8,7 @@ echo "------------------------"
 echo
 mkdir bin/build
 cd bin/build
-cmake -DCMAKE_BUILD_TYPE=Release -DGENERATE_CONFIG=ON -DENABLE_TRACE=ON -DENABLE_PROFILER=ON ../../FlareEngine/cpp/
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-O3 -DGENERATE_CONFIG=ON -DENABLE_TRACE=ON -DENABLE_PROFILER=ON ../../FlareEngine/cpp/
 make -j6
 echo
 echo "------------------------"
@@ -35,6 +35,6 @@ echo
 cd ..
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release ../FlareEditor
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-O3 ../FlareEditor
 echo
 make -j6

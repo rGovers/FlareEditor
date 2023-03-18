@@ -99,7 +99,7 @@ public:
    
     void PushCursorPos(const glm::vec2& a_cPos) const;
     void PushMouseState(unsigned char a_state) const;
-    void PushKeyboardState(const KeyboardState& a_state) const;
+    void PushKeyboardState(KeyboardState& a_state) const;
 
     bool Start(const std::filesystem::path& a_workingDir);
     void Update();
