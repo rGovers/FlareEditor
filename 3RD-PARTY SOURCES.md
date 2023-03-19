@@ -18,8 +18,3 @@ https://github.com/ocornut/imgui
 Original Project:
 
 https://github.com/epezent/implot
-
-### stb
-Original Project:
-
-https://github.com/nothings/stb

@@ -39,13 +39,13 @@ include_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/cpp/Shared/"
                     "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-glfw/include/"
                     "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-glm/"
                     "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-mono/build/include/mono-2.0/"
+                    "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-stb/"
                     "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-tinyxml2/"
                     "${PROJECT_SOURCE_DIR}/include/"
                     "${PROJECT_SOURCE_DIR}/lib/glad/include/"
                     "${PROJECT_SOURCE_DIR}/lib/imgui/"
                     "${PROJECT_SOURCE_DIR}/lib/imgui/backends/"
-                    "${PROJECT_SOURCE_DIR}/lib/implot/"
-                    "${PROJECT_SOURCE_DIR}/lib/stb/")
+                    "${PROJECT_SOURCE_DIR}/lib/implot/")
 
 file(GLOB SOURCES 
     "src/*.cpp" 
