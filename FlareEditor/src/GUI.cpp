@@ -191,35 +191,34 @@ FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, GetStringList), MonoStrin
 
     {
         STACK_G_ID(str);
-        combo = ImGui::BeginCombo(str, selectedStr);
-    }   
-    
-    if (combo)
-    {
-        for (int32_t i = 0; i < size; ++i)
+
+        if (ImGui::BeginCombo(str, selectedStr))
         {
-            const bool selected = i == *a_selected;
-
-            char* selectableStr = mono_string_to_utf8(mono_array_get(a_list, MonoString*, i));
-
-            STACK_G_ID(std::string(str) + "[" + std::to_string(i) + "]");
-            if (ImGui::Selectable(selectableStr, selected))
+            for (int32_t i = 0; i < size; ++i)
             {
-                *a_selected = i;
+                const bool selected = i == *a_selected;
 
-                ret = true;
+                char* selectableStr = mono_string_to_utf8(mono_array_get(a_list, MonoString*, i));
+
+                STACK_G_ID(std::string(str) + "[" + std::to_string(i) + "]");
+                if (ImGui::Selectable(selectableStr, selected))
+                {
+                    *a_selected = i;
+
+                    ret = true;
+                }
+
+                if (selected)
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+
+                mono_free(selectableStr);
             }
 
-            if (selected)
-            {
-                ImGui::SetItemDefaultFocus();
-            }
-
-            mono_free(selectableStr);
+            ImGui::EndCombo();
         }
-
-        ImGui::EndCombo();
-    }
+    }   
 
     mono_free(str);
 

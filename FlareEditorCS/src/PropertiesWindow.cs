@@ -35,6 +35,8 @@ namespace FlareEditor
         [MethodImpl(MethodImplOptions.InternalCall)]
         static extern void WriteDef(string a_path, byte[] a_data);
 
+        const string DefintionNamespace = "FlareEngine.Definitions.";
+
         void ShowFields(string a_name, ref object a_obj, object a_normVal, Type a_type)
         {
             switch (a_obj)
@@ -307,6 +309,50 @@ namespace FlareEditor
 
                 break;
             }
+            case bool val:
+            {
+                if (a_defaultObj == null || val != (bool)a_defaultObj)
+                {
+                    XmlElement element = a_doc.CreateElement(a_name);
+                    a_parent.AppendChild(element);
+                    element.InnerText = val.ToString();
+                }
+
+                break;
+            }
+            case byte val:
+            {
+                if (a_defaultObj == null || val != (byte)a_defaultObj)
+                {
+                    XmlElement element = a_doc.CreateElement(a_name);
+                    a_parent.AppendChild(element);
+                    element.InnerText = val.ToString();
+                }
+
+                break;
+            }
+            case short val:
+            {
+                if (a_defaultObj == null || val != (short)a_defaultObj)
+                {
+                    XmlElement element = a_doc.CreateElement(a_name);
+                    a_parent.AppendChild(element);
+                    element.InnerText = val.ToString();
+                }
+
+                break;
+            }
+            case ushort val:
+            {
+                if (a_defaultObj == null || val != (ushort)a_defaultObj)
+                {
+                    XmlElement element = a_doc.CreateElement(a_name);
+                    a_parent.AppendChild(element);
+                    element.InnerText = val.ToString();
+                }
+
+                break;
+            }
             case int val:
             {
                 if (a_defaultObj == null || val != (int)a_defaultObj)
@@ -438,9 +484,8 @@ namespace FlareEditor
                     }
 
                     XmlElement element = a_doc.CreateElement(a_name);
-                    a_parent.AppendChild(element);
 
-                    FieldInfo[] fields = a_type.GetFields();
+                    FieldInfo[] fields = a_type.GetFields(BindingFlags.Public | BindingFlags.Instance);
                     if (a_defaultObj != null)
                     {
                         foreach (FieldInfo field in fields)
@@ -464,6 +509,11 @@ namespace FlareEditor
 
                             SerializeField(a_doc, element, field.Name, field.GetValue(a_obj), null, field.FieldType);
                         }
+                    }
+
+                    if (element.HasChildNodes)
+                    {
+                        a_parent.AppendChild(element);
                     }
                 }
 
@@ -502,7 +552,13 @@ namespace FlareEditor
                 XmlDocument doc = new XmlDocument();
                 doc.AppendChild(doc.CreateXmlDeclaration("1.0", "utf-16", null));
 
-                XmlElement root = doc.CreateElement(mainDef.GetType().ToString());
+                string defNameStr = mainDef.GetType().ToString();
+                if (defNameStr.StartsWith(DefintionNamespace))
+                {
+                    defNameStr = defNameStr.Remove(0, DefintionNamespace.Length);
+                }
+
+                XmlElement root = doc.CreateElement(defNameStr);
                 doc.AppendChild(root);
                 root.SetAttribute("Name", mainDef.DefName);
                 

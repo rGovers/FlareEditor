@@ -388,7 +388,7 @@ namespace FlareEditor
             if (GetColor(a_label, handle.AddrOfPinnedObject()) != 0)
             {
                 ret = true;
-                a_color = vec.ToColor();
+                a_color = ((Vector4)handle.Target).ToColor();
             }
 
             handle.Free();
