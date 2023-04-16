@@ -35,10 +35,17 @@ FileToHeader(
     VARIABLE_NAME "AboutTemplate"
 )
 
+if (MINGW)
+    include_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-mono/crossbuild/include/mono-2.0/")
+    link_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-mono/crossbuild/lib/")
+else()
+    include_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-mono/build/include/mono-2.0/")
+    link_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-mono/build/lib/")
+endif()
+
 include_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/cpp/Shared/"
                     "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-glfw/include/"
                     "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-glm/"
-                    "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-mono/build/include/mono-2.0/"
                     "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-stb/"
                     "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-tinyxml2/"
                     "${PROJECT_SOURCE_DIR}/include/"
@@ -66,10 +73,14 @@ target_link_libraries(FlareEditor glfw ${GLFW_LIBRARIES})
 
 if (WIN32)
     target_link_libraries(FlareEditor wsock32 ws2_32)
-endif()
 
-if (MSVC)
-    target_link_libraries(FlareEditor mono-2.0-sgen)
+    if (MSVC)
+        target_link_libraries(FlareEditor mono-2.0-sgen)
+    else()
+        target_link_libraries(FlareEditor monosgen-2.0)
+
+        target_link_libraries(FlareEditor -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic)
+    endif()
     set_property(TARGET FlareEditor PROPERTY VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 else()
     target_link_libraries(FlareEditor mono-2.0)

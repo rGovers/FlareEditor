@@ -6,11 +6,7 @@
 #include "InputBindings.h"
 #include "PipeMessage.h"
 
-#if WIN32
-#include <WinSock2.h>
-#include <Windows.h>
-#include <afunix.h>
-#endif
+#include "WindowsHeaders.h"
 
 #include <cstdint>
 #include <filesystem>
