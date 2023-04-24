@@ -7,7 +7,9 @@
 #include <mono/metadata/mono-config.h>
 #include <string>
 
+#include "ConsoleCommand.h"
 #include "Logger.h"
+#include "MonoProjectGenerator.h"
 
 FLARE_MONO_EXPORT(void, Logger_PushMessage, MonoString* a_string)
 {
@@ -34,6 +36,48 @@ FLARE_MONO_EXPORT(void, Logger_PushError, MonoString* a_string)
     mono_free(str);
 }
 
+static std::vector<std::string> SplitString(const std::string_view& a_string)
+{
+    std::vector<std::string> v;
+
+    const char* s = a_string.data();
+    const char* l = s;
+    while (*s != 0)
+    {
+        if (*s == '\n')
+        {
+            const std::string str = std::string(l, s - l);
+
+            if (!str.empty())
+            {
+                v.emplace_back(str);
+            }
+
+            ++s;
+
+            while (*s == ' ')
+            {
+                ++s;
+            }
+
+            l = s;
+
+            continue;
+        }
+
+        ++s;
+    }
+
+    const std::string str = std::string(l, s - l);
+
+    if (!str.empty())
+    {
+        v.emplace_back(str);
+    }
+
+    return v;
+}
+
 RuntimeManager::RuntimeManager()
 {
     mono_config_parse(NULL);
@@ -42,65 +86,82 @@ RuntimeManager::RuntimeManager()
 
     m_mainDomain = mono_jit_init_version("FlareCS", "v4.0");
 
-    m_buildDomain = mono_domain_create_appdomain("FlareEditorBuildEngine", NULL);
-    assert(m_buildDomain != nullptr);
-    mono_domain_set(m_buildDomain, 0);
-
-    m_buildAssembly = mono_domain_assembly_open(m_buildDomain, "./FlareEditorBuildEngine.dll");
-    assert(m_buildAssembly != nullptr);
-    MonoImage* image = mono_assembly_get_image(m_buildAssembly);
-    MonoClass* buildProgramClass = mono_class_from_name(image, "FlareEditor.BuildEngine", "Program");
-
-    MonoMethodDesc* buildDesc = mono_method_desc_new(":Build(string,string)", 0);
-    m_buildMethod = mono_method_desc_search_in_class(buildDesc, buildProgramClass);
-
-    mono_method_desc_free(buildDesc);
-
-    mono_add_internal_call("FlareEditor.BuildEngine.Logger::Message", (void*)Logger_PushMessage);
-    mono_add_internal_call("FlareEditor.BuildEngine.Logger::Warning", (void*)Logger_PushWarning);
-    mono_add_internal_call("FlareEditor.BuildEngine.Logger::Error", (void*)Logger_PushError);
-
     m_editorDomain = nullptr;
+
+    m_built = false;
 }
 RuntimeManager::~RuntimeManager()
 {
     mono_jit_cleanup(m_mainDomain);
 }
 
-bool RuntimeManager::Build(const std::string_view& a_path, const std::string_view& a_name)
+bool RuntimeManager::Build(const std::filesystem::path& a_path, const std::string_view& a_name)
 {
-    mono_domain_set(m_buildDomain, 0);
+    const std::filesystem::path cachePath = a_path / ".cache";
+    const std::filesystem::path projectPath = a_path / "Project";
+    const std::filesystem::path projectFile = cachePath / (std::string(a_name) + ".csproj");
 
-    m_built = true;
+    const std::chrono::high_resolution_clock::time_point startTime = std::chrono::high_resolution_clock::now();
 
-    const std::chrono::time_point startTime = std::chrono::high_resolution_clock::now();
+    std::vector<std::filesystem::path> projectScripts;
+    MonoProjectGenerator::GetScripts(&projectScripts, projectPath, projectPath);
 
-    MonoString* pathString = mono_string_new(m_buildDomain, a_path.data());
-    MonoString* nameString = mono_string_new(m_buildDomain, a_name.data());
-
-    void* args[2];
-    args[0] = pathString;
-    args[1] = nameString;
-
-    MonoObject* retVal = mono_runtime_invoke(m_buildMethod, NULL, args, NULL);
-    const mono_bool retValBool = *(mono_bool*)mono_object_unbox(retVal);
-
-    if (retValBool == 0)
+    const std::string projectDependencies[] =
     {
-        m_built = false;
+        "System",
+        "System.Xml",
+        "FlareEngine"
+    };
 
-        Logger::Error("Failed to build project");
+    const MonoProjectGenerator project = MonoProjectGenerator(projectScripts.data(), (uint32_t)projectScripts.size(), projectDependencies, sizeof(projectDependencies) / sizeof(*projectDependencies));
+    project.Serialize(a_name, projectFile, std::filesystem::path("Core") / "Assemblies");
 
-        return false;
+    ConsoleCommand cmd = ConsoleCommand("xbuild");
+
+    const std::string args[] =
+    {
+        projectFile.string()
+    };
+    
+    const std::string out = cmd.Run(args, sizeof(args) / sizeof(*args));
+
+    const std::vector<std::string> outLines = SplitString(out);
+
+    const std::chrono::high_resolution_clock::time_point endTime = std::chrono::high_resolution_clock::now();
+
+    const double time = std::chrono::duration<double>(endTime - startTime).count();
+
+    Logger::Message("Project Built in " + std::to_string(time) + "s");
+
+    bool error = false;
+
+    for (const std::string& s : outLines)
+    {
+        if (s.find("Build FAILED") != std::string::npos)
+        {
+            error = true;
+
+            break;
+        }
+        else if (s.find("Build succeeded") != std::string::npos)
+        {
+            break;
+        }
+        else if (s.find("error") != std::string::npos)
+        {
+            error = true;
+
+            Logger::Error(s);
+        }
+        else if (s.find("warning") != std::string::npos)
+        {
+            Logger::Warning(s);
+        }
     }
 
-    const std::chrono::time_point endTime = std::chrono::high_resolution_clock::now();
+    m_built = !error;
 
-    const double buildTime = std::chrono::duration<double>(endTime - startTime).count();
-
-    Logger::Message("Built Project in " + std::to_string(buildTime) + "s");
-
-    return true;
+    return m_built;
 }
 
 void RuntimeManager::Start()

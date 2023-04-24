@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <mono/jit/jit.h>
 #include <mono/metadata/assembly.h>
 #include <string_view>
@@ -33,10 +34,6 @@ private:
     MonoAssembly* m_engineAssembly;
     MonoImage*    m_engineImage;
 
-    MonoDomain*   m_buildDomain;
-    MonoAssembly* m_buildAssembly;
-    MonoMethod*   m_buildMethod;
-
     bool          m_built;
     
 protected:
@@ -55,7 +52,7 @@ public:
         return m_editorDomain;
     }
 
-    bool Build(const std::string_view& a_path, const std::string_view& a_name);
+    bool Build(const std::filesystem::path& a_path, const std::string_view& a_name);
 
     void Start();
 

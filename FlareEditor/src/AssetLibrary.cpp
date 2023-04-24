@@ -94,7 +94,7 @@ void AssetLibrary::TraverseTree(const std::filesystem::path& a_path, const std::
             }
             else if (name == "about.xml")
             {
-                asset.AssetType == AssetType_About;
+                asset.AssetType = AssetType_About;
             }
             else
             {
@@ -107,7 +107,7 @@ void AssetLibrary::TraverseTree(const std::filesystem::path& a_path, const std::
                 // Get file size by reading the entire file and seek back to the start
                 // Could use os specific stuff to find file size but it is os specific
                 file.ignore(std::numeric_limits<std::streamsize>::max());
-                asset.Size = file.gcount();
+                asset.Size = (uint32_t)file.gcount();
                 file.clear();
                 file.seekg(0, std::ios::beg);
 
