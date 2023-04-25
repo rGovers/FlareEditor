@@ -35,6 +35,17 @@ FileToHeader(
     VARIABLE_NAME "AboutTemplate"
 )
 
+FileToHeader(
+    SOURCE_FILE "shaders/gizmo.vert"
+    HEADER_FILE "include/Shaders/GizmoVertex.h"
+    VARIABLE_NAME "GizmoVertex"
+)
+FileToHeader(
+    SOURCE_FILE "shaders/gizmo.frag"
+    HEADER_FILE "include/Shaders/GizmoPixel.h"
+    VARIABLE_NAME "GizmoPixel"
+)
+
 if (MINGW)
     include_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-mono/crossbuild/include/mono-2.0/")
     link_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-mono/crossbuild/lib/")

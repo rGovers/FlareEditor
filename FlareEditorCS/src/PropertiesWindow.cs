@@ -531,6 +531,11 @@ namespace FlareEditor
             {
                 string path = a_paths[i];
 
+                if (path == "[Scene]")
+                {
+                    continue;
+                }
+
                 Def mainDef = null;
                 foreach (Def def in defs)
                 {

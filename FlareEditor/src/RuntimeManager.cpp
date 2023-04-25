@@ -11,7 +11,7 @@
 #include "Logger.h"
 #include "MonoProjectGenerator.h"
 
-FLARE_MONO_EXPORT(void, Logger_PushMessage, MonoString* a_string)
+FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(Logger, PushMessage), MonoString* a_string)
 {
     char* str = mono_string_to_utf8(a_string);
 
@@ -19,7 +19,7 @@ FLARE_MONO_EXPORT(void, Logger_PushMessage, MonoString* a_string)
 
     mono_free(str);
 }
-FLARE_MONO_EXPORT(void, Logger_PushWarning, MonoString* a_string)
+FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(Logger, PushWarning), MonoString* a_string)
 {
     char* str = mono_string_to_utf8(a_string);
 
@@ -27,7 +27,7 @@ FLARE_MONO_EXPORT(void, Logger_PushWarning, MonoString* a_string)
 
     mono_free(str);
 }
-FLARE_MONO_EXPORT(void, Logger_PushError, MonoString* a_string)
+FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(Logger, PushError), MonoString* a_string)
 {
     char* str = mono_string_to_utf8(a_string);
 
@@ -35,6 +35,12 @@ FLARE_MONO_EXPORT(void, Logger_PushError, MonoString* a_string)
 
     mono_free(str);
 }
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(Application, GetEditorState))
+{
+    return 1;
+}
+
+#define ATTACH_FUNCTION(namespace, klass, function) mono_add_internal_call(RUNTIME_FUNCTION_STRING(namespace, klass, function), (void*)RUNTIME_FUNCTION_NAME(klass, function));
 
 static std::vector<std::string> SplitString(const std::string_view& a_string)
 {
@@ -211,9 +217,10 @@ void RuntimeManager::Start()
     m_editorUpdateMethod = mono_method_desc_search_in_class(updateDesc, editorProgramClass);
     m_editorUnloadMethod = mono_method_desc_search_in_class(unloadDesc, editorProgramClass);
 
-    mono_add_internal_call("FlareEngine.Logger::PushMessage", (void*)Logger_PushMessage);
-    mono_add_internal_call("FlareEngine.Logger::PushWarning", (void*)Logger_PushWarning);
-    mono_add_internal_call("FlareEngine.Logger::PushError", (void*)Logger_PushError);
+    ATTACH_FUNCTION(FlareEngine, Logger, PushMessage);
+    ATTACH_FUNCTION(FlareEngine, Logger, PushWarning);
+    ATTACH_FUNCTION(FlareEngine, Logger, PushError);
+    ATTACH_FUNCTION(FlareEngine, Application, GetEditorState);
 
     m_engineAssembly = mono_domain_assembly_open(m_editorDomain, "FlareCS.dll");
     assert(m_engineAssembly != nullptr);

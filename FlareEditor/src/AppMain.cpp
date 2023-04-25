@@ -10,6 +10,7 @@
 #include "AssetLibrary.h"
 #include "Datastore.h"
 #include "FileHandler.h"
+#include "Gizmos.h"
 #include "GUI.h"
 #include "Modals/CreateProjectModal.h"
 #include "ProcessManager.h"
@@ -81,6 +82,7 @@ static void GLAPIENTRY MessageCallback
         break;
     }
     case GL_DEBUG_TYPE_PERFORMANCE:
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
     {
         Logger::Warning(stream.str());
 
@@ -149,6 +151,7 @@ AppMain::AppMain() : Application(1280, 720, "FlareEditor")
 
     m_project = new Project(this, m_assets, m_workspace);
 
+    Gizmos::Init();
     GUI::Init(m_runtime);
 
     FileHandler::Init(m_workspace);
@@ -192,6 +195,7 @@ AppMain::~AppMain()
     FileHandler::Destroy();
     Datastore::Destroy();
 
+    Gizmos::Destroy();
     GUI::Destroy();
 
     ImGui_ImplOpenGL3_Shutdown();
