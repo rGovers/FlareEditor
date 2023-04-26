@@ -6,9 +6,11 @@ echo "Building Engine"
 echo
 echo "------------------------"
 echo
-mkdir bin/build
+if [ ! -d "bin/build" ]; then
+    mkdir bin/build
+fi
 cd bin/build
-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-O3 -DGENERATE_CONFIG=ON -DENABLE_TRACE=ON -DENABLE_PROFILER=ON ../../FlareEngine/cpp/
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-O3 -DGENERATE_CONFIG=ON -DENABLE_TRACE=ON -DENABLE_PROFILER=ON ../../FlareEngine/FlareNative/
 make -j6
 echo
 echo "------------------------"
@@ -31,7 +33,9 @@ echo
 echo "------------------------"
 echo
 cd ..
-mkdir build
+if [ ! -d "build" ]; then
+    mkdir build
+fi
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-O3 ../FlareEditor
 echo

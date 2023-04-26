@@ -54,12 +54,12 @@ else()
     link_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-mono/build/lib/")
 endif()
 
-include_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/cpp/Shared/"
+include_directories("${PROJECT_SOURCE_DIR}/include/"
+                    "${PROJECT_SOURCE_DIR}/../FlareEngine/FlareBase/include/"
                     "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-glfw/include/"
                     "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-glm/"
                     "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-stb/"
                     "${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-tinyxml2/"
-                    "${PROJECT_SOURCE_DIR}/include/"
                     "${PROJECT_SOURCE_DIR}/lib/glad/include/"
                     "${PROJECT_SOURCE_DIR}/lib/imgui/"
                     "${PROJECT_SOURCE_DIR}/lib/imgui/backends/"
@@ -75,12 +75,17 @@ file(GLOB SOURCES
     "lib/implot/implot.cpp" 
     "lib/implot/implot_items.cpp")
 
-add_subdirectory("${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-glfw" "build/glfw")
+if (NOT TARGET GLFW)
+    add_subdirectory("${PROJECT_SOURCE_DIR}/../FlareEngine/deps/flare-glfw" "build/glfw")
+endif()
+if (NOT TARGET FlareBase)
+    add_subdirectory("${PROJECT_SOURCE_DIR}/../FlareEngine/FlareBase" "build/FlareBase")
+endif()
 
 link_directories("${PROJECT_SOURCE_DIR}/../FlareEngine/deps/mono/build/lib/")
 
 add_executable(FlareEditor ${SOURCES})
-target_link_libraries(FlareEditor glfw ${GLFW_LIBRARIES})
+target_link_libraries(FlareEditor FlareBase glfw ${GLFW_LIBRARIES})
 
 if (WIN32)
     target_link_libraries(FlareEditor wsock32 ws2_32)

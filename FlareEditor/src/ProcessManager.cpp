@@ -156,20 +156,20 @@ void ProcessManager::DestroyProc()
 }
 #endif
 
-PipeMessage ProcessManager::ReceiveMessage()
+FlareBase::PipeMessage ProcessManager::ReceiveMessage()
 {
-    PipeMessage msg;
+    FlareBase::PipeMessage msg;
 
 #if WIN32
-    const int size = recv(m_pipeSock, (char*)&msg, PipeMessage::Size, 0);
+    const int size = recv(m_pipeSock, (char*)&msg, FlareBase::PipeMessage::Size, 0);
     if (size == SOCKET_ERROR)
     {
         Logger::Error("Connection Error: " + std::to_string(WSAGetLastError()));
         m_pipeSock = INVALID_SOCKET;
 
-        return PipeMessage();
+        return FlareBase::PipeMessage();
     }
-    if (size >= PipeMessage::Size)
+    if (size >= FlareBase::PipeMessage::Size)
     {
         msg.Data = new char[msg.Length];
         char* dataBuffer = msg.Data;
@@ -187,15 +187,15 @@ PipeMessage ProcessManager::ReceiveMessage()
             {
                 m_pipeSock = INVALID_SOCKET;
 
-                return PipeMessage();
+                return FlareBase::PipeMessage();
             }
         }
 
         return msg;
     }
 #else
-    const uint32_t size = (uint32_t)read(m_pipeSock, &msg, PipeMessage::Size);
-    if (size >= PipeMessage::Size)
+    const uint32_t size = (uint32_t)read(m_pipeSock, &msg, FlareBase::PipeMessage::Size);
+    if (size >= FlareBase::PipeMessage::Size)
     {
         msg.Data = new char[msg.Length];
         char* dataBuffer = msg.Data;
@@ -211,18 +211,18 @@ PipeMessage ProcessManager::ReceiveMessage()
     }
 #endif
     
-    return PipeMessage();
+    return FlareBase::PipeMessage();
 }
-void ProcessManager::PushMessage(const PipeMessage& a_message) const
+void ProcessManager::PushMessage(const FlareBase::PipeMessage& a_message) const
 {
 #if WIN32
-    send(m_pipeSock, (const char*)&a_message, PipeMessage::Size, 0);
+    send(m_pipeSock, (const char*)&a_message, FlareBase::PipeMessage::Size, 0);
     if (a_message.Data != nullptr)
     {
         send(m_pipeSock, a_message.Data, (int)a_message.Length, 0);
     }
 #else
-    write(m_pipeSock, &a_message, PipeMessage::Size);
+    write(m_pipeSock, &a_message, FlareBase::PipeMessage::Size);
     if (a_message.Data != nullptr)
     {
         write(m_pipeSock, a_message.Data, a_message.Length);
@@ -236,7 +236,7 @@ void ProcessManager::InitMessage() const
 
     const glm::ivec2 data = glm::ivec2((int)m_width, (int)m_height);
 
-    PushMessage({ PipeMessageType_Resize, sizeof(glm::ivec2), (char*)&data });
+    PushMessage({ FlareBase::PipeMessageType_Resize, sizeof(glm::ivec2), (char*)&data });
 }
 
 bool ProcessManager::Start(const std::filesystem::path& a_workingDir)
@@ -379,11 +379,11 @@ bool ProcessManager::Start(const std::filesystem::path& a_workingDir)
 
 void ProcessManager::PollMessage()
 {
-    const PipeMessage msg = ReceiveMessage();
+    const FlareBase::PipeMessage msg = ReceiveMessage();
 
     switch (msg.Type)
     {
-    case PipeMessageType_PushFrame:
+    case FlareBase::PipeMessageType_PushFrame:
     {
         if (msg.Length == m_width * m_height * 4)
         {
@@ -393,7 +393,7 @@ void ProcessManager::PollMessage()
 
         break;
     }
-    case PipeMessageType_FrameData:
+    case FlareBase::PipeMessageType_FrameData:
     {
         const double delta = *(double*)(msg.Data + 0);
         const double time = *(double*)(msg.Data + 4);
@@ -410,7 +410,7 @@ void ProcessManager::PollMessage()
 
         break;
     }
-    case PipeMessageType_UpdateData:
+    case FlareBase::PipeMessageType_UpdateData:
     {
         const double delta = *(double*)(msg.Data + 0);
         const double time = *(double*)(msg.Data + 4);
@@ -427,7 +427,7 @@ void ProcessManager::PollMessage()
 
         break;
     }
-    case PipeMessageType_Message:
+    case FlareBase::PipeMessageType_Message:
     {
         constexpr uint32_t TypeSize = sizeof(e_LoggerMessageType);
 
@@ -457,13 +457,13 @@ void ProcessManager::PollMessage()
 
         break;
     }
-    case PipeMessageType_ProfileScope:
+    case FlareBase::PipeMessageType_ProfileScope:
     {
         ProfilerData::PushData(*(ProfileScope*)msg.Data);
 
         break;
     }
-    case PipeMessageType_Close:
+    case FlareBase::PipeMessageType_Close:
     {
 #if WIN32
         m_processInfo.hProcess = INVALID_HANDLE_VALUE;
@@ -473,7 +473,7 @@ void ProcessManager::PollMessage()
 #endif
         break;
     }
-    case PipeMessageType_Null:
+    case FlareBase::PipeMessageType_Null:
     {
         break;
     }
@@ -542,7 +542,7 @@ void ProcessManager::Update()
     // Do it this way so the editor does not get overwhelmed with frame data
     // Cause extreme lag if I do not throttle the push frames ~1 fps
     // IPCs are only so fast
-    PushMessage({ PipeMessageType_UnlockFrame });
+    PushMessage({ FlareBase::PipeMessageType_UnlockFrame });
 
     if (m_resize)
     {
@@ -550,14 +550,14 @@ void ProcessManager::Update()
 
         const glm::ivec2 size = glm::ivec2((int)m_width, (int)m_height);
 
-        PushMessage({ PipeMessageType_Resize, sizeof(glm::ivec2), (char*)&size});
+        PushMessage({ FlareBase::PipeMessageType_Resize, sizeof(glm::ivec2), (char*)&size});
     }
 }
 void ProcessManager::Stop()
 {
     Logger::Message("Stopping FlareEngine Instance");
     
-    PushMessage({ PipeMessageType_Close });
+    PushMessage({ FlareBase::PipeMessageType_Close });
 
 #if WIN32
     while (m_pipeSock != INVALID_SOCKET && m_processInfo.hProcess != INVALID_HANDLE_VALUE && m_processInfo.hThread != INVALID_HANDLE_VALUE)
@@ -595,20 +595,20 @@ void ProcessManager::PushCursorPos(const glm::vec2& a_cPos) const
 {
     if (IsRunning())
     {
-        PushMessage({ PipeMessageType_CursorPos, sizeof(glm::vec2), (char*)&a_cPos});
+        PushMessage({ FlareBase::PipeMessageType_CursorPos, sizeof(glm::vec2), (char*)&a_cPos});
     }
 }
 void ProcessManager::PushMouseState(unsigned char a_state) const
 {
     if (IsRunning())
     {
-        PushMessage({ PipeMessageType_MouseState, sizeof(unsigned char), (char*)&a_state });
+        PushMessage({ FlareBase::PipeMessageType_MouseState, sizeof(unsigned char), (char*)&a_state });
     }
 }
-void ProcessManager::PushKeyboardState(KeyboardState& a_state) const
+void ProcessManager::PushKeyboardState(FlareBase::KeyboardState& a_state) const
 {
     if (IsRunning())
     {
-        PushMessage({ PipeMessageType_KeyboardState, KeyboardState::ElementCount, (char*)a_state.ToData() });
+        PushMessage({ FlareBase::PipeMessageType_KeyboardState, FlareBase::KeyboardState::ElementCount, (char*)a_state.ToData() });
     }
 }

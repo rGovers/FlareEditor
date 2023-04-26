@@ -168,28 +168,28 @@ void GameWindow::Update()
         unsigned char mouseState = 0;
         if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
         {
-            mouseState |= 0b1 << MouseButton_Left;
+            mouseState |= 0b1 << FlareBase::MouseButton_Left;
         }
         if (ImGui::IsMouseDown(ImGuiMouseButton_Middle))
         {
-            mouseState |= 0b1 << MouseButton_Middle;
+            mouseState |= 0b1 << FlareBase::MouseButton_Middle;
         }
         if (ImGui::IsMouseDown(ImGuiMouseButton_Right))
         {
-            mouseState |= 0b1 << MouseButton_Right;
+            mouseState |= 0b1 << FlareBase::MouseButton_Right;
         }
 
         m_processManager->PushMouseState(mouseState);
 
-        KeyboardState state;
-        for (unsigned int i = 0; i < KeyCode_Last; ++i)
+        FlareBase::KeyboardState state;
+        for (unsigned int i = 0; i < FlareBase::KeyCode_Last; ++i)
         {
             const ImGuiKey key = GameKeyTable[i];
             if (key != ImGuiKey_None)
             {
                 if (ImGui::IsKeyDown(key))
                 {
-                    state.SetKey((e_KeyCode)i, true);
+                    state.SetKey((FlareBase::e_KeyCode)i, true);
                 }
             }
         }

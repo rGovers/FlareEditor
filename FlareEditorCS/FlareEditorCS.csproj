@@ -25,7 +25,7 @@
         <Optimize>true</Optimize>
     </PropertyGroup>
     <ItemGroup>
-        <ProjectReference Include="../FlareEngine/cs/FlareCS.csproj">
+        <ProjectReference Include="../FlareEngine/FlareCS/FlareCS.csproj">
             <Name>FlareCS</Name>
         </ProjectReference>
     </ItemGroup>

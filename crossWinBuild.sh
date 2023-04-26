@@ -8,7 +8,7 @@ echo "------------------------"
 echo
 mkdir bin/crossbuild
 cd bin/crossbuild
-cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-O3 -DGENERATE_CONFIG=ON -DENABLE_TRACE=ON -DENABLE_PROFILER=ON -DCMAKE_TOOLCHAIN_FILE=../../FlareEngine/toolchains/WinCross.cmake ../../FlareEngine/cpp/
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-O3 -DGENERATE_CONFIG=ON -DENABLE_TRACE=ON -DENABLE_PROFILER=ON -DCMAKE_TOOLCHAIN_FILE=../../FlareEngine/toolchains/WinCross.cmake ../../FlareEngine/FlareNative/
 make -j6
 echo
 echo "------------------------"

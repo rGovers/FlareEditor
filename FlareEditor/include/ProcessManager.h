@@ -47,8 +47,8 @@ private:
                         
     GLuint              m_tex;
 
-    PipeMessage ReceiveMessage();
-    void PushMessage(const PipeMessage& a_message) const;
+    FlareBase::PipeMessage ReceiveMessage();
+    void PushMessage(const FlareBase::PipeMessage& a_message) const;
     
     void InitMessage() const;
     void PollMessage();
@@ -95,7 +95,7 @@ public:
    
     void PushCursorPos(const glm::vec2& a_cPos) const;
     void PushMouseState(unsigned char a_state) const;
-    void PushKeyboardState(KeyboardState& a_state) const;
+    void PushKeyboardState(FlareBase::KeyboardState& a_state) const;
 
     bool Start(const std::filesystem::path& a_workingDir);
     void Update();
