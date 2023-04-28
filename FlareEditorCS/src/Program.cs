@@ -13,6 +13,7 @@ namespace FlareEditor
             initMethod.Invoke(null, new object[] { });
 
             AssetProperties.Init();
+            SceneData.Init();
         }
 
         static void Update(double a_delta)

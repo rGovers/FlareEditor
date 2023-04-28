@@ -22,6 +22,7 @@
 #include "Windows/ControlWindow.h"
 #include "Windows/EditorWindow.h"
 #include "Windows/GameWindow.h"
+#include "Windows/HierarchyWindow.h"
 #include "Windows/ProfilerWindow.h"
 #include "Windows/PropertiesWindow.h"
 #include "Workspace.h"
@@ -161,6 +162,7 @@ AppMain::AppMain() : Application(1280, 720, "FlareEditor")
     m_windows.emplace_back(new EditorWindow());
     m_windows.emplace_back(new GameWindow(m_process));
     m_windows.emplace_back(new AssetBrowserWindow(m_project, m_assets));
+    m_windows.emplace_back(new HierarchyWindow(m_runtime));
     m_windows.emplace_back(new PropertiesWindow(m_runtime));
 
     m_titleSet = 0.0;
@@ -308,6 +310,11 @@ void AppMain::Update(double a_delta, double a_time)
                 if (ImGui::MenuItem("Properties"))
                 {
                     m_windows.emplace_back(new PropertiesWindow(m_runtime));
+                }
+
+                if (ImGui::MenuItem("Hierarchy"))
+                {
+                    m_windows.emplace_back(new HierarchyWindow(m_runtime));
                 }
 
                 ImGui::Separator();

@@ -92,6 +92,14 @@ void AssetLibrary::TraverseTree(const std::filesystem::path& a_path, const std::
             {
                 asset.AssetType = AssetType_Scribe;
             }
+            else if (ext == ".fscene")
+            {
+                asset.AssetType = AssetType_Scene;
+            }
+            else if (ext == ".dae" || ext == ".obj")
+            {
+                asset.AssetType = AssetType_Model;
+            }
             else if (name == "about.xml")
             {
                 asset.AssetType = AssetType_About;
@@ -168,17 +176,34 @@ void AssetLibrary::Refresh(const std::filesystem::path& a_workingDir)
         return;
     }
 
-    std::vector<const char*> assets;
-    std::vector<uint32_t> sizes;
-    std::vector<std::filesystem::path> paths;
+    std::vector<const char*> defAssets;
+    std::vector<uint32_t> defSizes;
+    std::vector<std::filesystem::path> defPaths;
+
+    std::vector<const char*> sceneAssets;
+    std::vector<uint32_t> sceneSizes;
+    std::vector<std::filesystem::path> scenePaths;
 
     for (const Asset& asset : m_assets)
     {
-        if (asset.AssetType == AssetType_Def)
+        switch (asset.AssetType)
         {
-            assets.emplace_back(asset.Data);
-            sizes.emplace_back((uint32_t)asset.Size);
-            paths.emplace_back(asset.Path);
+        case AssetType_Def:
+        {
+            defAssets.emplace_back(asset.Data);
+            defSizes.emplace_back((uint32_t)asset.Size);
+            defPaths.emplace_back(asset.Path);
+
+            break;
+        }
+        case AssetType_Scene:
+        {
+            sceneAssets.emplace_back(asset.Data);
+            sceneSizes.emplace_back((uint32_t)asset.Size);
+            scenePaths.emplace_back(asset.Path);
+
+            break;
+        }
         }
     }
 
@@ -187,30 +212,55 @@ void AssetLibrary::Refresh(const std::filesystem::path& a_workingDir)
     MonoClass* stringClass = mono_get_string_class();
     MonoClass* byteClass = mono_get_byte_class();
 
-    const uint32_t size = (uint32_t)assets.size();
+    const uint32_t defSize = (uint32_t)defAssets.size();
 
-    MonoArray* dataArray = mono_array_new(editorDomain, stringClass, (uintptr_t)size);
-    MonoArray* pathArray = mono_array_new(editorDomain, stringClass, (uintptr_t)size);
-    for (uint32_t i = 0; i < size; ++i)
+    MonoArray* defDataArray = mono_array_new(editorDomain, byteClass, (uintptr_t)defSize);
+    MonoArray* defPathArray = mono_array_new(editorDomain, stringClass, (uintptr_t)defSize);
+    for (uint32_t i = 0; i < defSize; ++i)
     {
-        MonoArray* data = mono_array_new(editorDomain, byteClass, sizes[i]);
-        for (uint32_t j = 0; j < sizes[i]; ++j)
+        MonoArray* data = mono_array_new(editorDomain, byteClass, defSizes[i]);
+        for (uint32_t j = 0; j < defSizes[i]; ++j)
         {
-            mono_array_set(data, mono_byte, j, (mono_byte)assets[i][j]);
+            mono_array_set(data, mono_byte, j, (mono_byte)defAssets[i][j]);
         }
 
-        mono_array_set(dataArray, MonoArray*, i, data);
-        mono_array_set(pathArray, MonoString*, i, mono_string_from_utf32((mono_unichar4*)paths[i].u32string().c_str()));
+        mono_array_set(defDataArray, MonoArray*, i, data);
+        mono_array_set(defPathArray, MonoString*, i, mono_string_from_utf32((mono_unichar4*)defPaths[i].u32string().c_str()));
     }
 
-    void* args[] = 
+    void* defArgs[] = 
     {
-        dataArray,
-        pathArray
+        defDataArray,
+        defPathArray
     };
 
-    m_runtime->ExecFunction("FlareEngine.Definitions", "DefLibrary", ":LoadDefs(byte[][],string[])", args);
+    m_runtime->ExecFunction("FlareEngine.Definitions", "DefLibrary", ":LoadDefs(byte[][],string[])", defArgs);
     m_runtime->ExecFunction("FlareEngine.Definitions", "DefLibrary", ":ResolveDefs()", nullptr);
+
+    const uint32_t sceneSize = (uint32_t)sceneAssets.size();
+
+    MonoArray* sceneDataArray = mono_array_new(editorDomain, byteClass, (uintptr_t)sceneSize);
+    MonoArray* scenePathArray = mono_array_new(editorDomain, stringClass, (uintptr_t)sceneSize);
+
+    for (uint32_t i = 0; i < sceneSize; ++i)
+    {
+        MonoArray* data = mono_array_new(editorDomain, byteClass, sceneSizes[i]);
+        for (uint32_t j = 0; j < sceneSizes[i]; ++j)
+        {
+            mono_array_set(data, mono_byte, j, (mono_byte)sceneAssets[i][j]);
+        }
+
+        mono_array_set(sceneDataArray, MonoArray*, i, data);
+        mono_array_set(scenePathArray, MonoString*, i, mono_string_from_utf32((mono_unichar4*)scenePaths[i].u32string().c_str()));
+    }
+
+    void* sceneArgs[] =
+    {
+        sceneDataArray,
+        scenePathArray
+    };
+
+    m_runtime->ExecFunction("FlareEditor", "SceneData", ":LoadScenes(byte[][],string[])", sceneArgs);
 }
 void AssetLibrary::BuildDirectory(const std::filesystem::path& a_path) const
 {
@@ -263,6 +313,12 @@ void AssetLibrary::BuildDirectory(const std::filesystem::path& a_path) const
 
             break;
         }
+        case AssetType_Scene:
+        {
+            // TODO
+
+            continue;
+        }
         case AssetType_Script:
         {
             continue;
@@ -292,6 +348,7 @@ void AssetLibrary::BuildDirectory(const std::filesystem::path& a_path) const
 
             break;
         }
+        case AssetType_Model:
         case AssetType_Other:
         {
             const std::filesystem::path p = a_path / "Core" / "Assets" / asset.Path;

@@ -18,6 +18,7 @@ FileHandler::FileHandler(Workspace* a_workspace)
     m_extTex.emplace(".fvert", Datastore::GetTexture("Textures/FileIcons/FileIcon_GLVert.png"));
 
     m_extOpenCallback.emplace(".def", FileCallback(std::bind(&Workspace::OpenDef, a_workspace, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
+    m_extOpenCallback.emplace(".fscene", FileCallback(std::bind(&Workspace::SetScene, a_workspace, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 
     m_extDragCallback.emplace(".def", FileCallback(std::bind(&Workspace::PushDef, a_workspace, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3)));
 }

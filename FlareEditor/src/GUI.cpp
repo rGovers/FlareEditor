@@ -239,6 +239,10 @@ FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, ResetButton), MonoString*
     return (uint32_t)ret;
 }
 
+FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(GUI, NIndent))
+{
+    ImGui::Indent(ImGui::GetTreeNodeToLabelSpacing());
+}
 FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(GUI, Indent))
 {
     ImGui::Indent();
@@ -333,6 +337,46 @@ FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(GUI, PopID))
     Instance->PopID();
 }
 
+FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(GUI, Label), MonoString* a_str)
+{
+    char* str = mono_string_to_utf8(a_str);
+
+    ImGui::Text(str);
+
+    mono_free(str);
+}
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, GetSelectable), MonoString* a_str)
+{
+    char* str = mono_string_to_utf8(a_str);
+
+    STACK_G_ID(str);
+    const bool ret = ImGui::Selectable(str);
+
+    mono_free(str);
+
+    return (uint32_t)ret;
+}
+
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, NodeI), MonoString* a_str)
+{
+    char* str = mono_string_to_utf8(a_str);
+    
+    STACK_G_ID(str);
+    const bool ret = ImGui::TreeNode(str);
+
+    mono_free(str);
+
+    return (uint32_t)ret;
+}
+FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(GUI, PopNode))
+{
+    ImGui::TreePop();
+}
+FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(GUI, SameLine))
+{
+    ImGui::SameLine();
+}
+
 GUI::GUI(RuntimeManager* a_runtime)
 {
     m_runtime = a_runtime;
@@ -367,6 +411,7 @@ void GUI::Init(RuntimeManager* a_runtime)
 
         BIND_FUNCTION(a_runtime, FlareEditor, GUI, ResetButton);
 
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, NIndent);
         BIND_FUNCTION(a_runtime, FlareEditor, GUI, Indent);
         BIND_FUNCTION(a_runtime, FlareEditor, GUI, Unindent);
 
@@ -377,6 +422,13 @@ void GUI::Init(RuntimeManager* a_runtime)
 
         BIND_FUNCTION(a_runtime, FlareEditor, GUI, PushID);
         BIND_FUNCTION(a_runtime, FlareEditor, GUI, PopID);
+
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, Label);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, GetSelectable);
+
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, NodeI);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, PopNode);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, SameLine);
     }
 }
 void GUI::Destroy()

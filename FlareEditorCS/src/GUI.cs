@@ -43,6 +43,8 @@ namespace FlareEditor
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern static void Indent();
         [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern static void NIndent();
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public extern static void Unindent();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -57,6 +59,18 @@ namespace FlareEditor
         public extern static void PushID(string a_id);
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern static void PopID();
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern static void Label(string a_str);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        extern static uint GetSelectable(string a_str);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        extern static uint NodeI(string a_str);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern static void PopNode();
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern static void SameLine();
 
         public static bool RCheckbox(string a_label, ref bool a_value, bool a_default)
         {
@@ -552,6 +566,16 @@ namespace FlareEditor
             handle.Free();
 
             return ret;
+        }
+        
+        public static bool Node(string a_str)
+        {
+            return NodeI(a_str) != 0;
+        }
+
+        public static bool Selectable(string a_str)
+        {
+            return GetSelectable(a_str) != 0;
         }
     }
 }

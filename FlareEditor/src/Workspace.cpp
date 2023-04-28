@@ -4,15 +4,32 @@
 
 #include "Runtime/RuntimeManager.h"
 
-#include <iostream>
+static Workspace* Instance = nullptr;
+
+#define WORKSPACE_RUNTIME_ATTACH(ret, namespace, klass, name, code, ...) a_runtime->BindFunction(RUNTIME_FUNCTION_STRING(namespace, klass, name), (void*)RUNTIME_FUNCTION_NAME(klass, name));
+
+#define WORKSPACE_BINDING_FUNCTION_TABLE(F) \
+    F(MonoString*, FlareEditor, Workspace, GetCurrentScene, {  return mono_string_new_wrapper(Instance->GetCurrentScene().string().c_str()); }) \
+    F(void, FlareEditor, Workspace, SetCurrentScene, { char* str = mono_string_to_utf8(a_path); Instance->SetCurrentScene(str); mono_free(str); }, MonoString* a_path) 
+
+WORKSPACE_BINDING_FUNCTION_TABLE(RUNTIME_FUNCTION_DEFINITION);
 
 Workspace::Workspace(RuntimeManager* a_runtime)
 {
     m_runtime = a_runtime;
+
+    WORKSPACE_BINDING_FUNCTION_TABLE(WORKSPACE_RUNTIME_ATTACH);
+
+    Instance = this;
 }
 Workspace::~Workspace()
 {
     
+}
+
+void Workspace::SetScene(const std::filesystem::path& a_path, uint32_t a_size, const char* a_data)
+{
+    m_currentScene = a_path;
 }
 
 void Workspace::OpenDef(const std::filesystem::path& a_path, uint32_t a_size, const char* a_data)
