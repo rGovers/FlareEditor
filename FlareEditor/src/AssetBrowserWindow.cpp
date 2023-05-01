@@ -88,7 +88,7 @@ void AssetBrowserWindow::Refresh()
 
     MakeDirectoryNode(-1, m_project->GetProjectPath());
 }
-void AssetBrowserWindow::Update()
+void AssetBrowserWindow::Update(double a_delta)
 {
     if (m_curIndex == -1)
     {

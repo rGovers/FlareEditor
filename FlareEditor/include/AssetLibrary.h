@@ -48,6 +48,7 @@ public:
     void Refresh(const std::filesystem::path& a_workingDir);
     void BuildDirectory(const std::filesystem::path& a_path) const;
 
+    void GetAsset(const std::filesystem::path& a_path, uint32_t* a_size, const char** a_data);
     void GetAsset(const std::filesystem::path& a_workingDir, const std::filesystem::path& a_path, uint32_t* a_size, const char** a_data);
 
     void Serialize(const std::filesystem::path& a_workingDir) const;

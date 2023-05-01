@@ -27,5 +27,5 @@ public:
     ProfilerWindow();
     ~ProfilerWindow();
 
-    virtual void Update();
+    virtual void Update(double a_delta);
 };

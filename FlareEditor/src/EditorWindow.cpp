@@ -4,9 +4,30 @@
 #include <imgui.h>
 
 #include "Gizmos.h"
+#include "PixelShader.h"
+#include "Runtime/RuntimeManager.h"
+#include "ShaderProgram.h"
+#include "Shaders/GridPixel.h"
+#include "Shaders/GridVertex.h"
+#include "VertexShader.h"
 
-EditorWindow::EditorWindow() : Window("Editor")
+uint32_t EditorWindow::RefCount = 0;
+ShaderProgram* EditorWindow::GridShader = nullptr;
+
+EditorWindow::EditorWindow(RuntimeManager* a_runtime) : Window("Editor")
 {
+    if (GridShader == nullptr)
+    {
+        const VertexShader v = VertexShader(GRIDVERTEX);
+        const PixelShader p = PixelShader(GRIDPIXEL);
+
+        GridShader = new ShaderProgram(&v, &p);
+    }
+
+    ++RefCount;
+
+    m_runtime = a_runtime;
+
     m_width = -1;
     m_height = -1;
 
@@ -41,19 +62,27 @@ EditorWindow::EditorWindow() : Window("Editor")
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    m_translation = glm::vec3(0.0f, 1.0f, 10.0f);
+    m_translation = glm::vec3(0.0f, -1.0f, 10.0f);
 
     m_rotation = glm::identity<glm::quat>();
+
+    m_scroll = 10.0f;
 }
 EditorWindow::~EditorWindow()
 {
+    if (--RefCount == 0)
+    {
+        delete GridShader;
+        GridShader = nullptr;
+    }
+
     glDeleteTextures(1, &m_textureHandle);
     glDeleteTextures(1, &m_depthTextureHandle);
 
     glDeleteFramebuffers(1, &m_framebufferHandle);
 }
 
-void EditorWindow::Update()
+void EditorWindow::Update(double a_delta)
 {
     const ImVec2 vMinIm = ImGui::GetWindowContentRegionMin();
     const ImVec2 vMaxIm = ImGui::GetWindowContentRegionMax();
@@ -75,6 +104,7 @@ void EditorWindow::Update()
     if (ImGui::IsWindowFocused() || ImGui::IsWindowHovered())
     {
         glBindFramebuffer(GL_FRAMEBUFFER, m_framebufferHandle);
+        glViewport(0, 0, (GLsizei)m_width, (GLsizei)m_height);
 
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
@@ -82,16 +112,66 @@ void EditorWindow::Update()
 
         glEnable(GL_CULL_FACE);
 
-        Gizmos::DrawLine(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        const ImVec2 imPos = ImGui::GetMousePos();
 
-        const glm::mat4 per = glm::perspective(glm::pi<float>() * 0.4f, (float)m_width / m_height, 0.01f, 1000.0f);
+        const glm::vec2 mPos = glm::vec2(imPos.x, imPos.y);
 
-        const glm::mat4 trans = glm::translate(glm::toMat4(m_rotation), m_translation);
+        if (ImGui::IsMouseDown(ImGuiMouseButton_Right))
+        {
+            glm::vec3 mov = glm::vec3(0.0f);
+
+            if (ImGui::IsKeyDown(ImGuiKey_W))
+            {
+                mov += m_rotation * glm::vec3(0.0f, 0.0f, -1.0f);
+            }
+            if (ImGui::IsKeyDown(ImGuiKey_S))
+            {
+                mov += m_rotation * glm::vec3(0.0f, 0.0f, 1.0f);
+            }
+            if (ImGui::IsKeyDown(ImGuiKey_A))
+            {
+                mov += m_rotation * glm::vec3(-1.0f, 0.0f, 0.0f);
+            }
+            if (ImGui::IsKeyDown(ImGuiKey_D))
+            {
+                mov += m_rotation * glm::vec3(1.0f, 0.0f, 0.0f);
+            }
+            if (ImGui::IsKeyDown(ImGuiKey_Space))
+            {
+                mov += m_rotation * glm::vec3(0.0f, -1.0f, 0.0f);
+            }
+            if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
+            {
+                mov += m_rotation * glm::vec3(0.0f, 1.0f, 0.0f);
+            }
+
+            const glm::vec2 mMov = m_prevMousePos - mPos;
+
+            m_rotation = glm::angleAxis(mMov.x * 0.05f, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::angleAxis(-mMov.y * 0.05f, m_rotation * glm::vec3(1.0f, 0.0f, 0.0f)) * m_rotation;
+
+            m_translation += mov * m_scroll * (float)a_delta;
+        }
+
+        m_prevMousePos = mPos;
+
+        const glm::mat4 proj = glm::perspective(glm::pi<float>() * 0.4f, (float)m_width / m_height, 0.01f, 1000.0f);
+
+        const glm::mat4 trans = glm::translate(glm::identity<glm::mat4>(), m_translation) * glm::toMat4(m_rotation);
+        // const glm::mat4 trans = glm::translate(glm::toMat4(m_rotation), m_translation);
         const glm::mat4 view = glm::inverse(trans);
 
-        Gizmos::Render(per * view);
+        const GLuint handle = GridShader->GetHandle();
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glUseProgram(handle);
+
+        glUniformMatrix4fv(0, 1, GL_FALSE, (GLfloat*)&view);
+        glUniformMatrix4fv(1, 1, GL_FALSE, (GLfloat*)&proj);
+
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+        m_runtime->ExecFunction("FlareEditor", "EditorWindow", ":OnGUI()", nullptr);
+
+        Gizmos::Render(proj * view);
     }   
 
     ImGui::Image((ImTextureID)m_textureHandle, sizeIm);

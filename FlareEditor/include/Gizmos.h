@@ -6,6 +6,7 @@
 #include <glad/glad.h>
 #include <vector>
 
+class RuntimeManager;
 class ShaderProgram;
 
 struct GizmoVertex
@@ -24,8 +25,6 @@ struct GizmoVertex
 class Gizmos
 {
 private:
-    static Gizmos* Instance;
-
     ShaderProgram*            m_shader;
 
     GLuint                    m_vbo;
@@ -42,7 +41,7 @@ protected:
 public:
     ~Gizmos();
 
-    static void Init();
+    static void Init(RuntimeManager* a_runtime);
     static void Destroy();
 
     static void DrawLine(const glm::vec3& a_start, const glm::vec3& a_end, float a_width = 0.1f, const glm::vec4& a_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));

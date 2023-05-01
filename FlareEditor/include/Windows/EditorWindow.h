@@ -11,24 +11,36 @@
 #include <cstdint>
 #include <glad/glad.h>
 
+class RuntimeManager;
+class ShaderProgram;
+
 class EditorWindow : public Window
 {
 private:
-    glm::vec3 m_translation;
-    glm::quat m_rotation;
+    static uint32_t RefCount;
+    static ShaderProgram* GridShader;
 
-    uint32_t  m_width;
-    uint32_t  m_height;
+    RuntimeManager* m_runtime;
 
-    GLuint    m_textureHandle;
-    GLuint    m_depthTextureHandle;
-    GLuint    m_framebufferHandle;
+    glm::vec3       m_translation;
+    glm::quat       m_rotation;
+
+    uint32_t        m_width;
+    uint32_t        m_height;
+
+    glm::vec2       m_prevMousePos;
+
+    float           m_scroll;
+
+    GLuint          m_textureHandle;
+    GLuint          m_depthTextureHandle;
+    GLuint          m_framebufferHandle;
 
 protected:
 
 public:
-    EditorWindow();
+    EditorWindow(RuntimeManager* a_runtime);
     virtual ~EditorWindow();
 
-    virtual void Update();
+    virtual void Update(double a_delta);
 };

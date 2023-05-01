@@ -23,5 +23,5 @@ public:
     ControlWindow(AppMain* a_app, ProcessManager* a_processManager, RuntimeManager* a_runtimeManager, Project* a_project);
     ~ControlWindow();
 
-    virtual void Update();
+    virtual void Update(double a_delta);
 };

@@ -23,6 +23,15 @@ public:
 
     void Run();
 
+    inline uint32_t GetWidth() const
+    {
+        return m_width;
+    }
+    inline uint32_t GetHeight() const
+    {
+        return m_height;
+    }
+
     virtual void Update(double a_delta, double a_time) = 0;
 
     inline GLFWwindow* GetWindow() const

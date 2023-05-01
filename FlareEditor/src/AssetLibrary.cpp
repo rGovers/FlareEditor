@@ -377,16 +377,14 @@ void AssetLibrary::BuildDirectory(const std::filesystem::path& a_path) const
     }
 }
 
-void AssetLibrary::GetAsset(const std::filesystem::path& a_workingDir, const std::filesystem::path& a_path, uint32_t* a_size, const char** a_data)
+void AssetLibrary::GetAsset(const std::filesystem::path& a_path, uint32_t* a_size, const char** a_data)
 {
     *a_size = 0;
     *a_data = nullptr;
 
-    const std::filesystem::path rPath = GetRelativePath(a_workingDir, a_path);
-
     for (const Asset& asset : m_assets)
     {
-        if (rPath == asset.Path)
+        if (a_path == asset.Path)
         {
             *a_size = asset.Size;
             *a_data = asset.Data;
@@ -394,6 +392,12 @@ void AssetLibrary::GetAsset(const std::filesystem::path& a_workingDir, const std
             return;
         }
     }
+}
+void AssetLibrary::GetAsset(const std::filesystem::path& a_workingDir, const std::filesystem::path& a_path, uint32_t* a_size, const char** a_data)
+{
+    const std::filesystem::path rPath = GetRelativePath(a_workingDir, a_path);
+
+    GetAsset(rPath, a_size, a_data);
 }
 
 void AssetLibrary::Serialize(const std::filesystem::path& a_workingDir) const

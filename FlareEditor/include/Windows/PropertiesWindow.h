@@ -15,5 +15,5 @@ public:
     PropertiesWindow(RuntimeManager* a_runtime);
     ~PropertiesWindow();
 
-    virtual void Update();
+    virtual void Update(double a_delta);
 };

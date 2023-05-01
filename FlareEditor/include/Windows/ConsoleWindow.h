@@ -33,5 +33,5 @@ public:
 
     void AddMessage(const std::string_view& a_message, e_LoggerMessageType a_type);
     
-    virtual void Update();
+    virtual void Update(double a_delta);
 };

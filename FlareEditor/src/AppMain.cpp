@@ -17,6 +17,7 @@
 #include "ProfilerData.h"
 #include "Project.h"
 #include "Runtime/RuntimeManager.h"
+#include "Runtime/RuntimeStorage.h"
 #include "Windows/AssetBrowserWindow.h"
 #include "Windows/ConsoleWindow.h"
 #include "Windows/ControlWindow.h"
@@ -147,19 +148,20 @@ AppMain::AppMain() : Application(1280, 720, "FlareEditor")
     m_runtime = new RuntimeManager();
 
     m_assets = new AssetLibrary(m_runtime);
+    m_rStorage = new RuntimeStorage(m_runtime, m_assets);
 
     m_workspace = new Workspace(m_runtime);
 
     m_project = new Project(this, m_assets, m_workspace);
 
-    Gizmos::Init();
+    Gizmos::Init(m_runtime);
     GUI::Init(m_runtime);
 
     FileHandler::Init(m_workspace);
-
+    
     m_windows.emplace_back(new ConsoleWindow());
     m_windows.emplace_back(new ControlWindow(this, m_process, m_runtime, m_project));
-    m_windows.emplace_back(new EditorWindow());
+    m_windows.emplace_back(new EditorWindow(m_runtime));
     m_windows.emplace_back(new GameWindow(m_process));
     m_windows.emplace_back(new AssetBrowserWindow(m_project, m_assets));
     m_windows.emplace_back(new HierarchyWindow(m_runtime));
@@ -191,6 +193,7 @@ AppMain::~AppMain()
 
     delete m_process;
     delete m_runtime;
+    delete m_rStorage;
 
     ProfilerData::Destroy();
 
@@ -289,7 +292,7 @@ void AppMain::Update(double a_delta, double a_time)
 
                 if (ImGui::MenuItem("Editor"))
                 {
-                    m_windows.emplace_back(new EditorWindow());
+                    m_windows.emplace_back(new EditorWindow(m_runtime));
                 }
 
                 if (ImGui::MenuItem("Game"))
@@ -336,7 +339,7 @@ void AppMain::Update(double a_delta, double a_time)
     {
         for (auto iter = m_windows.begin(); iter != m_windows.end(); ++iter)
         {
-            if (!(*iter)->Display())
+            if (!(*iter)->Display(a_delta))
             {
                 delete *iter;
                 iter = m_windows.erase(iter);
@@ -349,6 +352,9 @@ void AppMain::Update(double a_delta, double a_time)
         }
     }
     
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, (GLsizei)GetWidth(), (GLsizei)GetHeight());
+
     if (!m_modals.empty())
     {
         Modal* modal = m_modals[m_modals.size() - 1];

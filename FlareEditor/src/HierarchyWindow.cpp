@@ -11,7 +11,7 @@ HierarchyWindow::~HierarchyWindow()
 
 }
 
-void HierarchyWindow::Update()
+void HierarchyWindow::Update(double a_delta)
 {
     m_runtime->ExecFunction("FlareEditor", "HierarchyWindow", ":OnGUI()", nullptr);
 }

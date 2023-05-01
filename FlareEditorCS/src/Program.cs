@@ -1,3 +1,4 @@
+using FlareEngine;
 using FlareEngine.Definitions;
 using System;
 using System.Reflection;
@@ -9,11 +10,16 @@ namespace FlareEditor
         static void Load()
         {
             Type defLibraryType = typeof(DefLibrary);
-            MethodInfo initMethod = defLibraryType.GetMethod("Init", BindingFlags.Static | BindingFlags.NonPublic);
-            initMethod.Invoke(null, new object[] { });
+            MethodInfo defLibraryInitMethod = defLibraryType.GetMethod("Init", BindingFlags.Static | BindingFlags.NonPublic);
+            defLibraryInitMethod.Invoke(null, new object[] { });
+
+            Type assetLibraryType = typeof(AssetLibrary);
+            MethodInfo assetLibraryInitMethod = assetLibraryType.GetMethod("Init", BindingFlags.Static | BindingFlags.NonPublic);
+            assetLibraryInitMethod.Invoke(null, new object[] { });
 
             AssetProperties.Init();
             SceneData.Init();
+            EditorWindow.Init();
         }
 
         static void Update(double a_delta)
@@ -23,6 +29,7 @@ namespace FlareEditor
 
         static void Unload()
         {
+            AssetLibrary.ClearAssets();
             DefLibrary.Clear();
 
             // AppDomain.Unload(AppDomain.CurrentDomain);

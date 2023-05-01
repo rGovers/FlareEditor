@@ -1,12 +1,20 @@
 #include "Gizmos.h"
 
 #include "PixelShader.h"
+#include "Runtime/RuntimeManager.h"
 #include "ShaderProgram.h"
 #include "Shaders/GizmoPixel.h"
 #include "Shaders/GizmoVertex.h"
 #include "VertexShader.h"
 
-Gizmos* Gizmos::Instance = nullptr;
+static Gizmos* Instance = nullptr;
+
+#define GIZMOS_RUNTIME_ATTACH(ret, namespace, klass, name, code, ...) a_runtime->BindFunction(RUNTIME_FUNCTION_STRING(namespace, klass, name), (void*)RUNTIME_FUNCTION_NAME(klass, name));
+
+#define GIZMOS_BINDING_FUNCTION_TABLE(F) \
+    F(void, FlareEditor, Gizmos, DrawLine, { Gizmos::DrawLine(a_start, a_end, a_width, a_color); }, glm::vec3 a_start, glm::vec3 a_end, float a_width, glm::vec4 a_color)
+
+GIZMOS_BINDING_FUNCTION_TABLE(RUNTIME_FUNCTION_DEFINITION);
 
 Gizmos::Gizmos()
 {
@@ -39,11 +47,13 @@ Gizmos::~Gizmos()
     glDeleteVertexArrays(1, &m_vao);
 }
 
-void Gizmos::Init()
+void Gizmos::Init(RuntimeManager* a_runtime)
 {
     if (Instance == nullptr)
     {
         Instance = new Gizmos();
+
+        GIZMOS_BINDING_FUNCTION_TABLE(GIZMOS_RUNTIME_ATTACH);
     }
 }
 void Gizmos::Destroy()
@@ -66,7 +76,7 @@ void Gizmos::DrawLine(const glm::vec3& a_start, const glm::vec3& a_end, float a_
 
     glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
-    if (glm::dot(dir, up) >= 0.95f)
+    if (glm::abs(glm::dot(dir, up)) >= 0.95f)
     {
         up = glm::vec3(0.0f, 0.0f, 1.0f);
     }
@@ -108,6 +118,8 @@ void Gizmos::Render(const glm::mat4& a_transform)
         glUniformMatrix4fv(0, 1, GL_FALSE, (GLfloat*)&a_transform);
 
         glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, NULL);
+
+        glEnable(GL_CULL_FACE);
     }
 
     Instance->m_vertices.clear();

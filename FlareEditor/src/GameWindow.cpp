@@ -145,7 +145,7 @@ GameWindow::~GameWindow()
 
 }
 
-void GameWindow::Update()
+void GameWindow::Update(double a_delta)
 {
     const ImVec2 vMinIm = ImGui::GetWindowContentRegionMin();
     const ImVec2 vMaxIm = ImGui::GetWindowContentRegionMax();

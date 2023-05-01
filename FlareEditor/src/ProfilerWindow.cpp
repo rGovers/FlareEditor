@@ -98,7 +98,7 @@ void ProfilerWindow::SetFrameIndex(const std::string_view& a_snapshotName, const
     m_selections.emplace_back(selection);
 }
 
-void ProfilerWindow::Update()
+void ProfilerWindow::Update(double a_delta)
 {
     const std::vector<ProfileSnapshot> snapshots = ProfilerData::GetSnapshots();
 

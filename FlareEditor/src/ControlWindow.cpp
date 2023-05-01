@@ -21,7 +21,7 @@ ControlWindow::~ControlWindow()
 
 }
 
-void ControlWindow::Update()
+void ControlWindow::Update(double a_delta)
 {
     bool running = m_processManager->IsRunning();
     if (FlareImGui::ImageSwitchButton("Run Engine", "Textures/Icons/Controls_Stop.png", "Textures/Icons/Controls_Play.png", &running, glm::vec2(32.0f)))

@@ -15,5 +15,5 @@ public:
     GameWindow(ProcessManager* a_processManager);
     ~GameWindow();
 
-    virtual void Update();
+    virtual void Update(double a_delta);
 };

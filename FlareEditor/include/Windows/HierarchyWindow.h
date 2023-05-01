@@ -15,5 +15,5 @@ public:
     HierarchyWindow(RuntimeManager* a_runtime);
     ~HierarchyWindow();
 
-    virtual void Update();
+    virtual void Update(double a_delta);
 };

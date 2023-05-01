@@ -16,8 +16,8 @@ public:
     Window(const std::string_view& a_displayName);
     virtual ~Window();
 
-    bool Display();
+    bool Display(double a_delta);
 
     virtual void Refresh() { }
-    virtual void Update() = 0;
+    virtual void Update(double a_delta) = 0;
 };

@@ -47,7 +47,7 @@ void ConsoleWindow::AddMessage(const std::string_view& a_message, e_LoggerMessag
     m_messages.emplace_back(msg);
 }
 
-void ConsoleWindow::Update()
+void ConsoleWindow::Update(double a_delta)
 {
     if (ImGui::Button("Clear"))
     {

@@ -6,18 +6,18 @@ using System.Reflection;
 
 namespace FlareEditor
 {
-    public class AssetProperties
+    public static class AssetProperties
     {
-        static PropertiesWindow                     m_defaultWindow;
+        static PropertiesWindow                     s_defaultWindow;
 
-        static Dictionary<string, PropertiesWindow> m_windows;
+        static Dictionary<string, PropertiesWindow> s_windows;
 
-        static string                               m_defName;
+        static string                               s_defName;
 
         internal static void Init()
         {
-            m_defaultWindow = new PropertiesWindow();
-            m_windows = new Dictionary<string, PropertiesWindow>();
+            s_defaultWindow = new PropertiesWindow();
+            s_windows = new Dictionary<string, PropertiesWindow>();
 
             Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
@@ -34,7 +34,7 @@ namespace FlareEditor
                             PropertiesWindow window = Activator.CreateInstance(type) as PropertiesWindow;
                             if (window != null)
                             {
-                                m_windows.Add(att.OverrideType.ToString(), window);
+                                s_windows.Add(att.OverrideType.ToString(), window);
                             }
                             else
                             {
@@ -58,30 +58,30 @@ namespace FlareEditor
             {
                 if (def.DefPath == a_path)
                 {
-                    m_defName = def.DefName;
+                    s_defName = def.DefName;
 
                     return;
                 }
             }
 
-            m_defName = null;
+            s_defName = null;
         }
 
         static void OnGUI()
         {
-            if (!string.IsNullOrWhiteSpace(m_defName))
+            if (!string.IsNullOrWhiteSpace(s_defName))
             {
-                Def def = DefLibrary.GetDef(m_defName);
+                Def def = DefLibrary.GetDef(s_defName);
                 if (def != null)
                 {
                     string type = def.GetType().ToString();
-                    if (m_windows.ContainsKey(type))
+                    if (s_windows.ContainsKey(type))
                     {
-                        m_windows[type].OnGUI(def);
+                        s_windows[type].OnGUI(def);
                     }
                     else
                     {
-                        m_defaultWindow.OnGUI(def);
+                        s_defaultWindow.OnGUI(def);
                     }
                 }
             }

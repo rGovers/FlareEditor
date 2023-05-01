@@ -17,13 +17,13 @@ Window::~Window()
 
 }
 
-bool Window::Display()
+bool Window::Display(double a_delta)
 {
     if (m_open)
     {
         if (ImGui::Begin(m_idStr.c_str(), &m_open))
         {
-            Update();
+            Update(a_delta);
         }
 
         ImGui::End();

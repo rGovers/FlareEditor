@@ -11,7 +11,7 @@ PropertiesWindow::~PropertiesWindow()
 
 }
 
-void PropertiesWindow::Update()
+void PropertiesWindow::Update(double a_delta)
 {
     m_runtime->ExecFunction("FlareEditor", "AssetProperties", ":OnGUI", NULL);
 }
