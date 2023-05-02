@@ -8,11 +8,14 @@ class VertexShader
 private:
     GLuint m_handle;
     
+    VertexShader();
+    
 protected:
 
 public:
-    VertexShader(const std::string_view& a_str);
     ~VertexShader();
+
+    static VertexShader* GenerateShader(const std::string_view& a_str);
 
     inline GLuint GetHandle() const
     {

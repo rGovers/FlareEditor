@@ -10,12 +10,14 @@
 #include "AssetLibrary.h"
 #include "Datastore.h"
 #include "FileHandler.h"
+#include "Flare/FlareAssert.h"
 #include "Gizmos.h"
 #include "GUI.h"
 #include "Modals/CreateProjectModal.h"
 #include "ProcessManager.h"
 #include "ProfilerData.h"
 #include "Project.h"
+#include "RenderCommand.h"
 #include "Runtime/RuntimeManager.h"
 #include "Runtime/RuntimeStorage.h"
 #include "Windows/AssetBrowserWindow.h"
@@ -128,19 +130,13 @@ AppMain::AppMain() : Application(1280, 720, "FlareEditor")
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
     SetImguiStyle();
 
-    if (!ImGui_ImplGlfw_InitForOpenGL(GetWindow(), true))
-	{
-		assert(0);
-	}
-	if (!ImGui_ImplOpenGL3_Init("#version 130"))
-	{
-		assert(0);
-	}
-
+    FLARE_ASSERT_R(ImGui_ImplGlfw_InitForOpenGL(GetWindow(), true));
+    FLARE_ASSERT_R(ImGui_ImplOpenGL3_Init("#version 130"));
+    
     Datastore::Init();
     ProfilerData::Init();
 
@@ -154,6 +150,7 @@ AppMain::AppMain() : Application(1280, 720, "FlareEditor")
 
     m_project = new Project(this, m_assets, m_workspace);
 
+    RenderCommand::Init(m_runtime, m_rStorage);
     Gizmos::Init(m_runtime);
     GUI::Init(m_runtime);
 
@@ -161,7 +158,7 @@ AppMain::AppMain() : Application(1280, 720, "FlareEditor")
     
     m_windows.emplace_back(new ConsoleWindow());
     m_windows.emplace_back(new ControlWindow(this, m_process, m_runtime, m_project));
-    m_windows.emplace_back(new EditorWindow(m_runtime));
+    m_windows.emplace_back(new EditorWindow(m_runtime, m_workspace));
     m_windows.emplace_back(new GameWindow(m_process));
     m_windows.emplace_back(new AssetBrowserWindow(m_project, m_assets));
     m_windows.emplace_back(new HierarchyWindow(m_runtime));
@@ -200,6 +197,7 @@ AppMain::~AppMain()
     FileHandler::Destroy();
     Datastore::Destroy();
 
+    RenderCommand::Destroy();
     Gizmos::Destroy();
     GUI::Destroy();
 
@@ -292,7 +290,7 @@ void AppMain::Update(double a_delta, double a_time)
 
                 if (ImGui::MenuItem("Editor"))
                 {
-                    m_windows.emplace_back(new EditorWindow(m_runtime));
+                    m_windows.emplace_back(new EditorWindow(m_runtime, m_workspace));
                 }
 
                 if (ImGui::MenuItem("Game"))

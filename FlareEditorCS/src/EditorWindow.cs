@@ -53,11 +53,13 @@ namespace FlareEditor
 
         static void RenderGameObjects(GameObjectDef a_gameObjectDef, Matrix4 a_parentTransform)
         {
-            RenderComponents(a_gameObjectDef, true, a_parentTransform);
+            Matrix4 mat = a_parentTransform * Matrix4.FromTransform(a_gameObjectDef.Translation, a_gameObjectDef.Rotation, a_gameObjectDef.Scale);
+
+            RenderComponents(a_gameObjectDef, true, mat);
 
             foreach (GameObjectDef c in a_gameObjectDef.Children)
             {
-                RenderGameObjects(c, a_parentTransform);
+                RenderGameObjects(c, mat);
             }
         }
 
@@ -74,9 +76,11 @@ namespace FlareEditor
             {
                 GameObjectDef def = DefLibrary.GetDef(obj.DefName) as GameObjectDef;
 
+                Matrix4 mat = Matrix4.FromTransform(obj.Translation, obj.Rotation, obj.Scale);
+
                 if (def != null)
                 {
-                    RenderGameObjects(def, Matrix4.Identity);
+                    RenderGameObjects(def, mat);
                 }
             }
         }

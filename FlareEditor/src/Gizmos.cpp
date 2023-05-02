@@ -18,10 +18,13 @@ GIZMOS_BINDING_FUNCTION_TABLE(RUNTIME_FUNCTION_DEFINITION);
 
 Gizmos::Gizmos()
 {
-    VertexShader vShader = VertexShader(GIZMOVERTEX);
-    PixelShader pShader = PixelShader(GIZMOPIXEL);
+    VertexShader* vShader = VertexShader::GenerateShader(GIZMOVERTEX);
+    PixelShader* pShader = PixelShader::GenerateShader(GIZMOPIXEL);
 
-    m_shader = new ShaderProgram(&vShader, &pShader);
+    m_shader = ShaderProgram::GenerateProgram(vShader, pShader);
+
+    delete vShader;
+    delete pShader;
 
     glGenBuffers(1, &m_vbo);
     glGenBuffers(1, &m_ibo);

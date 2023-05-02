@@ -1,17 +1,21 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
 
+class EditorWindow;
 class RuntimeManager;
 
 class Workspace
 {
 private:
-    RuntimeManager*       m_runtime;
+    RuntimeManager*            m_runtime;
 
-    std::filesystem::path m_currentScene;
+    std::filesystem::path      m_currentScene;
 
-    std::filesystem::path m_selectionPath;
+    std::filesystem::path      m_selectionPath;
+
+    std::vector<EditorWindow*> m_editorWindows;
 
 protected:
 
@@ -32,6 +36,9 @@ public:
     {
         return m_runtime;
     }
+
+    void AddEditorWindow(EditorWindow* a_window);
+    void RemoveEditorWindow(EditorWindow* a_window);
 
     void SetScene(const std::filesystem::path& a_path, uint32_t a_size, const char* a_data);
 

@@ -18,6 +18,9 @@ namespace FlareEditor.Editor
 
             Model mdl = AssetLibrary.LoadModel(def.ModelPath);
             Material mat = AssetLibrary.GetMaterial(def.MaterialDef);
+
+            RenderCommand.BindMaterial(mat);
+            RenderCommand.DrawModel(a_transform, mdl);
         }
     }
 }

@@ -5,27 +5,33 @@
 
 #include "Gizmos.h"
 #include "PixelShader.h"
+#include "RenderCommand.h"
 #include "Runtime/RuntimeManager.h"
 #include "ShaderProgram.h"
 #include "Shaders/GridPixel.h"
 #include "Shaders/GridVertex.h"
 #include "VertexShader.h"
+#include "Workspace.h"
 
 uint32_t EditorWindow::RefCount = 0;
 ShaderProgram* EditorWindow::GridShader = nullptr;
 
-EditorWindow::EditorWindow(RuntimeManager* a_runtime) : Window("Editor")
+EditorWindow::EditorWindow(RuntimeManager* a_runtime, Workspace* a_workspace) : Window("Editor")
 {
     if (GridShader == nullptr)
     {
-        const VertexShader v = VertexShader(GRIDVERTEX);
-        const PixelShader p = PixelShader(GRIDPIXEL);
+        const VertexShader* v = VertexShader::GenerateShader(GRIDVERTEX);
+        const PixelShader* p = PixelShader::GenerateShader(GRIDPIXEL);
 
-        GridShader = new ShaderProgram(&v, &p);
+        GridShader = ShaderProgram::GenerateProgram(v, p);
+
+        delete v;
+        delete p;
     }
 
     ++RefCount;
 
+    m_workspace = a_workspace;
     m_runtime = a_runtime;
 
     m_width = -1;
@@ -67,9 +73,15 @@ EditorWindow::EditorWindow(RuntimeManager* a_runtime) : Window("Editor")
     m_rotation = glm::identity<glm::quat>();
 
     m_scroll = 10.0f;
+
+    m_refresh = true;
+
+    m_workspace->AddEditorWindow(this);
 }
 EditorWindow::~EditorWindow()
 {
+    m_workspace->RemoveEditorWindow(this);
+
     if (--RefCount == 0)
     {
         delete GridShader;
@@ -80,6 +92,58 @@ EditorWindow::~EditorWindow()
     glDeleteTextures(1, &m_depthTextureHandle);
 
     glDeleteFramebuffers(1, &m_framebufferHandle);
+}
+
+void EditorWindow::Draw()
+{
+    m_refresh = false;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, m_framebufferHandle);
+    glViewport(0, 0, (GLsizei)m_width, (GLsizei)m_height);
+
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    const glm::mat4 proj = glm::perspective(glm::pi<float>() * 0.4f, (float)m_width / m_height, 0.01f, 1000.0f);
+    const glm::mat4 invProj = glm::inverse(proj);
+
+    const glm::mat4 trans = glm::translate(glm::identity<glm::mat4>(), m_translation) * glm::toMat4(m_rotation);
+    const glm::mat4 view = glm::inverse(trans);
+
+    CameraShaderBuffer camBuffer;
+    camBuffer.View = view;
+    camBuffer.Proj = proj;
+    camBuffer.InvView = trans;
+    camBuffer.InvProj = invProj;
+    camBuffer.ViewProj = proj * view;
+
+    RenderCommand::PushCameraBuffer(camBuffer);
+
+    m_runtime->ExecFunction("FlareEditor", "EditorWindow", ":OnGUI()", nullptr);
+
+    const GLuint handle = GridShader->GetHandle();
+
+    glUseProgram(handle);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    glUniformMatrix4fv(0, 1, GL_FALSE, (GLfloat *)&view);
+    glUniformMatrix4fv(1, 1, GL_FALSE, (GLfloat *)&proj);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glDisable(GL_BLEND);
+
+    Gizmos::Render(proj * view);
 }
 
 void EditorWindow::Update(double a_delta)
@@ -99,19 +163,11 @@ void EditorWindow::Update(double a_delta)
         glBindTexture(GL_TEXTURE_2D, m_depthTextureHandle);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, m_width, m_height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
 
+        m_refresh = true;
     }
 
     if (ImGui::IsWindowFocused() || ImGui::IsWindowHovered())
     {
-        glBindFramebuffer(GL_FRAMEBUFFER, m_framebufferHandle);
-        glViewport(0, 0, (GLsizei)m_width, (GLsizei)m_height);
-
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glEnable(GL_CULL_FACE);
-
         const ImVec2 imPos = ImGui::GetMousePos();
 
         const glm::vec2 mPos = glm::vec2(imPos.x, imPos.y);
@@ -147,32 +203,19 @@ void EditorWindow::Update(double a_delta)
 
             const glm::vec2 mMov = m_prevMousePos - mPos;
 
-            m_rotation = glm::angleAxis(mMov.x * 0.05f, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::angleAxis(-mMov.y * 0.05f, m_rotation * glm::vec3(1.0f, 0.0f, 0.0f)) * m_rotation;
+            m_rotation = glm::angleAxis(mMov.x * 0.01f, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::angleAxis(-mMov.y * 0.01f, m_rotation * glm::vec3(1.0f, 0.0f, 0.0f)) * m_rotation;
 
             m_translation += mov * m_scroll * (float)a_delta;
         }
 
         m_prevMousePos = mPos;
 
-        const glm::mat4 proj = glm::perspective(glm::pi<float>() * 0.4f, (float)m_width / m_height, 0.01f, 1000.0f);
-
-        const glm::mat4 trans = glm::translate(glm::identity<glm::mat4>(), m_translation) * glm::toMat4(m_rotation);
-        // const glm::mat4 trans = glm::translate(glm::toMat4(m_rotation), m_translation);
-        const glm::mat4 view = glm::inverse(trans);
-
-        const GLuint handle = GridShader->GetHandle();
-
-        glUseProgram(handle);
-
-        glUniformMatrix4fv(0, 1, GL_FALSE, (GLfloat*)&view);
-        glUniformMatrix4fv(1, 1, GL_FALSE, (GLfloat*)&proj);
-
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-        m_runtime->ExecFunction("FlareEditor", "EditorWindow", ":OnGUI()", nullptr);
-
-        Gizmos::Render(proj * view);
+        Draw();
     }   
+    else if (m_refresh)
+    {
+        Draw();
+    }
 
     ImGui::Image((ImTextureID)m_textureHandle, sizeIm);
 }

@@ -13,6 +13,7 @@
 
 class RuntimeManager;
 class ShaderProgram;
+class Workspace;
 
 class EditorWindow : public Window
 {
@@ -20,7 +21,10 @@ private:
     static uint32_t RefCount;
     static ShaderProgram* GridShader;
 
+    bool            m_refresh;
+
     RuntimeManager* m_runtime;
+    Workspace*      m_workspace;
 
     glm::vec3       m_translation;
     glm::quat       m_rotation;
@@ -39,8 +43,15 @@ private:
 protected:
 
 public:
-    EditorWindow(RuntimeManager* a_runtime);
+    EditorWindow(RuntimeManager* a_runtime, Workspace* a_workspace);
     virtual ~EditorWindow();
+
+    void Draw();
+
+    inline void Refresh()
+    {
+        m_refresh = true;
+    }
 
     virtual void Update(double a_delta);
 };

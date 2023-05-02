@@ -20,7 +20,7 @@
 
 #define SHADER_UNIFORM_STR(S) #S
 #define GLSL_UNIFORM_STRING(set, name, structure) std::string("layout(binding=") + (set) + ",std140) " SHADER_UNIFORM_STR(structure) " " + (name) + ";" 
-#define GLSL_PUSHBUFFER_STRING(name, structure) std::string("layout(binding=64) " SHADER_UNIFORM_STR(structure) " ") + (name) + ";"
+#define GLSL_PUSHBUFFER_STRING(name, structure) std::string("layout(binding=64,std140) " SHADER_UNIFORM_STR(structure) " ") + (name) + ";"
 
 #define CAMERA_SHADER_STRUCTURE(D, M4) \
 D(CameraShaderBuffer) \

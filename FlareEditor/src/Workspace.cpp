@@ -3,6 +3,7 @@
 #include <imgui.h>
 
 #include "Runtime/RuntimeManager.h"
+#include "Windows/EditorWindow.h"
 
 static Workspace* Instance = nullptr;
 
@@ -27,9 +28,31 @@ Workspace::~Workspace()
     
 }
 
+void Workspace::AddEditorWindow(EditorWindow* a_window)
+{
+    m_editorWindows.emplace_back(a_window);
+}
+void Workspace::RemoveEditorWindow(EditorWindow* a_window)
+{
+    for (auto iter = m_editorWindows.begin(); iter != m_editorWindows.end(); ++iter)
+    {
+        if (*iter == a_window)
+        {
+            m_editorWindows.erase(iter);
+
+            return;
+        }
+    }
+}
+
 void Workspace::SetScene(const std::filesystem::path& a_path, uint32_t a_size, const char* a_data)
 {
     m_currentScene = a_path;
+
+    for (EditorWindow* wind : m_editorWindows)
+    {
+        wind->Refresh();
+    }
 }
 
 void Workspace::OpenDef(const std::filesystem::path& a_path, uint32_t a_size, const char* a_data)

@@ -38,9 +38,17 @@ public:
 
     uint32_t GenerateVertexShader(const std::string_view& a_str);
     void DestroyVertexShader(uint32_t a_addr);
+    inline VertexShader* GetVertexShader(uint32_t a_addr) const
+    {
+        return m_vertexShaders[a_addr];
+    }
 
     uint32_t GeneratePixelShader(const std::string_view& a_str);
     void DestroyPixelShader(uint32_t a_addr);
+    inline PixelShader* GetPixelShader(uint32_t a_addr) const
+    {
+        return m_pixelShaders[a_addr];
+    }
 
     uint32_t GenerateRenderProgram(const FlareBase::RenderProgram& a_program);
     void DestroyRenderProgram(uint32_t a_addr);
@@ -55,6 +63,10 @@ public:
 
     uint32_t GenerateModel(const void* a_vertices, uint32_t a_vertexCount, const uint32_t* a_indices, uint32_t a_indexCount, uint16_t a_vertexStride);
     void DestroyModel(uint32_t a_addr);
+    inline Model* GetModel(uint32_t a_addr) const
+    {
+        return m_models[a_addr];
+    }
 
     void Clear();
 };

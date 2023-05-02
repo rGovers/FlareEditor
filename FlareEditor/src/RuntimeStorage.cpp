@@ -263,7 +263,11 @@ void RuntimeStorage::Clear()
 
 uint32_t RuntimeStorage::GenerateVertexShader(const std::string_view& a_str)
 {
-    VertexShader* vShader = new VertexShader(a_str);
+    VertexShader* vShader = VertexShader::GenerateShader(a_str);
+    if (vShader == nullptr)
+    {
+        return -1;
+    }
 
     const uint32_t shaderCount = (uint32_t)m_vertexShaders.size();
     for (uint32_t i = 0; i < shaderCount; ++i)
@@ -288,7 +292,11 @@ void RuntimeStorage::DestroyVertexShader(uint32_t a_addr)
 
 uint32_t RuntimeStorage::GeneratePixelShader(const std::string_view& a_str)
 {
-    PixelShader* pShader = new PixelShader(a_str);
+    PixelShader* pShader = PixelShader::GenerateShader(a_str);
+    if (pShader == nullptr)
+    {
+        return -1;
+    }
 
     const uint32_t shaderCount = (uint32_t)m_pixelShaders.size();
     for (uint32_t i = 0; i < shaderCount; ++i)

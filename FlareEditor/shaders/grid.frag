@@ -42,6 +42,7 @@ void main()
     float v = cPos.z / cPos.w;
 
     gl_FragDepth = v * 0.5f + 0.5f;
+    // gl_FragDepth = v;
 
     float oV = v * 2 - 1;
     float lD = (2 * 0.1 * 100) / (100 + 0.1 - oV * (100 - 0.1));
