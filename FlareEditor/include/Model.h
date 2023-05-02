@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <glad/glad.h>
 
-#include "Vertices.h"
+#include "Flare/Vertices.h"
 
 class Model
 {

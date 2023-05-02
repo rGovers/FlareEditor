@@ -1,8 +1,8 @@
 #include "Model.h"
 
-#include "ColladaLoader.h"
+#include "Flare/ColladaLoader.h"
+#include "Flare/OBJLoader.h"
 #include "Logger.h"
-#include "OBJLoader.h"
 
 Model::Model(const void* a_vertices, uint32_t a_vertexCount, const GLuint* a_indices, uint32_t a_indexCount, uint16_t a_vertexStride)
 {

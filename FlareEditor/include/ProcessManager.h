@@ -3,10 +3,10 @@
 #define GLM_FORCE_SWIZZLE 
 #include <glm/glm.hpp>
 
-#include "InputBindings.h"
-#include "PipeMessage.h"
+#include "Flare/WindowsHeaders.h"
 
-#include "WindowsHeaders.h"
+#include "Flare/InputBindings.h"
+#include "Flare/PipeMessage.h"
 
 #include <cstdint>
 #include <filesystem>

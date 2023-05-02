@@ -2,7 +2,7 @@
 
 #include <imgui.h>
 
-#include "InputBindings.h"
+#include "Flare/InputBindings.h"
 #include "ProcessManager.h"
 
 static constexpr ImGuiKey GameKeyTable[] = 

@@ -17,7 +17,7 @@ namespace FlareEditor.Editor
             }
 
             Model mdl = AssetLibrary.LoadModel(def.ModelPath);
-            // Material mat = AssetLibrary.GetMaterial(def.MaterialDef);
+            Material mat = AssetLibrary.GetMaterial(def.MaterialDef);
         }
     }
 }

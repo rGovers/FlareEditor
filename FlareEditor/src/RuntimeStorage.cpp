@@ -1,20 +1,148 @@
 #include "Runtime/RuntimeStorage.h"
 
 #include "AssetLibrary.h"
-#include "ColladaLoader.h"
+#include "Flare/ColladaLoader.h"
+#include "Flare/OBJLoader.h"
 #include "Model.h"
-#include "OBJLoader.h"
+#include "PixelShader.h"
 #include "Runtime/RuntimeManager.h"
-#include "Vertices.h"
+#include "ShaderGenerator.h"
+#include "VertexShader.h"
 
 static RuntimeStorage* Instance = nullptr;
 
 #define RUNTIMESTORAGE_RUNTIME_ATTACH(ret, namespace, klass, name, code, ...) a_runtime->BindFunction(RUNTIME_FUNCTION_STRING(namespace, klass, name), (void*)RUNTIME_FUNCTION_NAME(klass, name));
 
 #define RUNTIMESTORAGE_BINDING_FUNCTION_TABLE(F) \
+    F(void, FlareEngine.Rendering, VertexShader, DestroyShader, { Instance->DestroyVertexShader(a_addr); }, uint32_t a_addr) \
+    F(void, FlareEngine.Rendering, PixelShader, DestroyShader, { Instance->DestroyPixelShader(a_addr); }, uint32_t a_addr) \
+    \
+    F(FlareBase::RenderProgram, FlareEngine.Rendering, Material, GetProgramBuffer, { return Instance->GetRenderProgram(a_addr); }, uint32_t a_addr) \
+    F(void, FlareEngine.Rendering, Material, SetProgramBuffer, { Instance->SetRenderProgram(a_addr, a_program); }, uint32_t a_addr, FlareBase::RenderProgram a_program) \
+    \
     F(void, FlareEngine.Rendering, Model, DestroyModel, { Instance->DestroyModel(a_addr); }, uint32_t a_addr)
 
 RUNTIMESTORAGE_BINDING_FUNCTION_TABLE(RUNTIME_FUNCTION_DEFINITION);
+
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(VertexShader, GenerateFromFile), MonoString* a_path)
+{
+    char* str = mono_string_to_utf8(a_path);
+
+    const std::filesystem::path p = std::filesystem::path(str);
+
+    mono_free(str);
+
+    AssetLibrary* library = Instance->GetLibrary();
+    if (p.extension() == ".fvert")
+    {
+        uint32_t size; 
+        const char* dat;
+        library->GetAsset(p, &size, &dat);
+
+        const std::string s = GLSL_FromFShader(std::string_view(dat, size));
+
+        return Instance->GenerateVertexShader(s);
+    }
+    else if (p.extension() == ".vert")
+    {
+        uint32_t size; 
+        const char* dat;
+        library->GetAsset(p, &size, &dat);
+
+        return Instance->GenerateVertexShader(dat);
+    }
+
+    return -1;
+}
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(PixelShader, GenerateFromFile), MonoString* a_path)
+{
+    char* str = mono_string_to_utf8(a_path);
+
+    const std::filesystem::path p = std::filesystem::path(str);
+
+    mono_free(str);
+
+    AssetLibrary* library = Instance->GetLibrary();
+    if (p.extension() == ".fpix" || p.extension() == ".ffrag")
+    {
+        uint32_t size;
+        const char* dat;
+
+        library->GetAsset(p, &size, &dat);
+
+        const std::string s = GLSL_FromFShader(std::string_view(dat, size));
+
+        return Instance->GeneratePixelShader(s);
+    }
+    else if (p.extension() == ".pix" || p.extension() == ".frag")
+    {
+        uint32_t size; 
+        const char* dat;
+        library->GetAsset(p, &size, &dat);
+
+        return Instance->GeneratePixelShader(dat);
+    }
+
+    return -1;
+}
+
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(Material, GenerateProgram), uint32_t a_vertexShader, uint32_t a_pixelShader, uint16_t a_vertexStride, MonoArray* a_attribute, MonoArray* a_shaderInputs, uint32_t a_cullMode, uint32_t a_primitiveMode, uint32_t a_enableColorBlending)
+{
+    FlareBase::RenderProgram program;
+    program.VertexShader = a_vertexShader;
+    program.PixelShader = a_pixelShader;
+    program.VertexStride = a_vertexStride;
+    program.CullingMode = (FlareBase::e_CullMode)a_cullMode;
+    program.PrimitiveMode = (FlareBase::e_PrimitiveMode)a_primitiveMode;
+    program.EnableColorBlending = (uint8_t)a_enableColorBlending;
+    program.Data = nullptr;
+    program.Flags = 0;
+
+    program.VertexInputCount = 0;
+    program.VertexAttribs = nullptr;
+    program.ShaderBufferInputCount = 0;
+    program.ShaderBufferInputs = nullptr;
+
+    if (a_attribute != nullptr)
+    {
+        program.VertexInputCount = (uint16_t)mono_array_length(a_attribute);
+        program.VertexAttribs = new FlareBase::VertexInputAttrib[program.VertexInputCount];
+
+        for (uint16_t i = 0; i < program.VertexInputCount; ++i)
+        {
+            program.VertexAttribs[i] = mono_array_get(a_attribute, FlareBase::VertexInputAttrib, i);
+        }
+    }
+
+    if (a_shaderInputs != nullptr)
+    {
+        program.ShaderBufferInputCount = (uint16_t)mono_array_length(a_shaderInputs);
+        program.ShaderBufferInputs = new FlareBase::ShaderBufferInput[program.ShaderBufferInputCount];
+
+        for (uint16_t i = 0; i < program.ShaderBufferInputCount; ++i)
+        {
+            program.ShaderBufferInputs[i] = mono_array_get(a_shaderInputs, FlareBase::ShaderBufferInput, i);
+        }
+    }
+
+    return Instance->GenerateRenderProgram(program);
+}
+FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(Material, DestroyProgram), uint32_t a_addr)
+{
+    FlareBase::RenderProgram program = Instance->GetRenderProgram(a_addr);
+
+    if (program.VertexAttribs != nullptr)
+    {
+        delete[] program.VertexAttribs;
+    }
+
+    if (program.ShaderBufferInputs != nullptr)
+    {
+        delete[] program.ShaderBufferInputs;
+    }
+
+    Instance->DestroyRenderProgram(a_addr);
+}
 
 FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(Model, GenerateModel), MonoArray* a_vertices, MonoArray* a_indices, uint16_t a_vertexStride)
 {
@@ -46,12 +174,12 @@ FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(Model, GenerateFromFile), Mono
 {
     char* str = mono_string_to_utf8(a_path);
 
-    uint32_t addr = -1;
+    const std::filesystem::path p = std::filesystem::path(str);
+
+    mono_free(str);
 
     std::vector<FlareBase::Vertex> vertices;
     std::vector<uint32_t> indices;
-
-    const std::filesystem::path p = std::filesystem::path(str);
 
     AssetLibrary* library = Instance->GetLibrary();
     if (p.extension() == ".obj")
@@ -62,7 +190,7 @@ FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(Model, GenerateFromFile), Mono
 
         if (FlareBase::OBJLoader_LoadData(dat, size, &vertices, &indices))
         {
-            addr = Instance->GenerateModel(vertices.data(), (uint32_t)vertices.size(), indices.data(), (uint32_t)indices.size(), sizeof(FlareBase::Vertex));
+            return Instance->GenerateModel(vertices.data(), (uint32_t)vertices.size(), indices.data(), (uint32_t)indices.size(), sizeof(FlareBase::Vertex));
         }
     }
     else if (p.extension() == ".dae")
@@ -70,17 +198,26 @@ FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(Model, GenerateFromFile), Mono
         const char* dat;
         uint32_t size;
         library->GetAsset(p, &size, &dat);
+
+        if (FlareBase::ColladaLoader_LoadData(dat, size, &vertices, &indices))
+        {
+            return Instance->GenerateModel(vertices.data(), (uint32_t)vertices.size(), indices.data(), (uint32_t)indices.size(), sizeof(FlareBase::Vertex));
+        }
     }
 
-    mono_free(str);
-
-    return addr;
+    return -1;
 }
 
 RuntimeStorage::RuntimeStorage(RuntimeManager* a_runtime, AssetLibrary* a_assets)
 {
     m_assets = a_assets;
     m_runtime = a_runtime;
+
+    BIND_FUNCTION(a_runtime, FlareEngine.Rendering, VertexShader, GenerateFromFile);
+    BIND_FUNCTION(a_runtime, FlareEngine.Rendering, PixelShader, GenerateFromFile);
+
+    BIND_FUNCTION(a_runtime, FlareEngine.Rendering, Material, GenerateProgram);
+    BIND_FUNCTION(a_runtime, FlareEngine.Rendering, Material, DestroyProgram);
 
     BIND_FUNCTION(a_runtime, FlareEngine.Rendering, Model, GenerateModel);
     BIND_FUNCTION(a_runtime, FlareEngine.Rendering, Model, GenerateFromFile);
@@ -103,8 +240,104 @@ void RuntimeStorage::Clear()
             delete mdl;
         }
     }
-
     m_models.clear();
+
+    for (VertexShader* v : m_vertexShaders)
+    {
+        if (v != nullptr)
+        {
+            delete v;
+        }
+    }
+    m_vertexShaders.clear();
+
+    for (PixelShader* p : m_pixelShaders)
+    {
+        if (p != nullptr)
+        {
+            delete p;
+        }
+    }
+    m_pixelShaders.clear();
+}
+
+uint32_t RuntimeStorage::GenerateVertexShader(const std::string_view& a_str)
+{
+    VertexShader* vShader = new VertexShader(a_str);
+
+    const uint32_t shaderCount = (uint32_t)m_vertexShaders.size();
+    for (uint32_t i = 0; i < shaderCount; ++i)
+    {
+        if (m_vertexShaders[i] == nullptr)
+        {
+            m_vertexShaders[i] = vShader;
+
+            return i;
+        }
+    }
+
+    m_vertexShaders.emplace_back(vShader);
+
+    return shaderCount;
+}
+void RuntimeStorage::DestroyVertexShader(uint32_t a_addr)
+{
+    delete m_vertexShaders[a_addr];
+    m_vertexShaders[a_addr] = nullptr;
+}
+
+uint32_t RuntimeStorage::GeneratePixelShader(const std::string_view& a_str)
+{
+    PixelShader* pShader = new PixelShader(a_str);
+
+    const uint32_t shaderCount = (uint32_t)m_pixelShaders.size();
+    for (uint32_t i = 0; i < shaderCount; ++i)
+    {
+        if (m_pixelShaders[i] == nullptr)
+        {
+            m_pixelShaders[i] = pShader;
+
+            return i;
+        }
+    }
+
+    m_pixelShaders.emplace_back(pShader);
+
+    return shaderCount;
+}
+void RuntimeStorage::DestroyPixelShader(uint32_t a_addr)
+{
+    delete m_pixelShaders[a_addr];
+    m_pixelShaders[a_addr] = nullptr;
+}
+
+uint32_t RuntimeStorage::GenerateRenderProgram(const FlareBase::RenderProgram& a_program)
+{
+    const uint32_t programCount = (uint32_t)m_renderPrograms.size();
+    for (uint32_t i = 0; i < programCount; ++i)
+    {
+        if (m_renderPrograms[i].Flags & 0b1 << FlareBase::RenderProgram::FreeFlag)
+        {
+            m_renderPrograms[i] = a_program;
+
+            return i;
+        }
+    }
+
+    m_renderPrograms.emplace_back(a_program);
+
+    return programCount;
+}
+void RuntimeStorage::DestroyRenderProgram(uint32_t a_addr)
+{
+    FlareBase::RenderProgram& program = m_renderPrograms[a_addr];
+    if (program.Flags & 0b1 << FlareBase::RenderProgram::DestroyFlag)
+    {
+        DestroyVertexShader(program.VertexShader);
+        DestroyPixelShader(program.PixelShader);
+    }
+
+    program.Flags = 0b1 << FlareBase::RenderProgram::FreeFlag;
 }
 
 uint32_t RuntimeStorage::GenerateModel(const void* a_vertices, uint32_t a_vertexCount, const uint32_t* a_indices, uint32_t a_indexCount, uint16_t a_vertexStride)
