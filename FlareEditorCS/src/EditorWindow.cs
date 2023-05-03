@@ -53,7 +53,7 @@ namespace FlareEditor
 
         static void RenderGameObjects(GameObjectDef a_gameObjectDef, Matrix4 a_parentTransform)
         {
-            Matrix4 mat = a_parentTransform * Matrix4.FromTransform(a_gameObjectDef.Translation, a_gameObjectDef.Rotation, a_gameObjectDef.Scale);
+            Matrix4 mat = Matrix4.FromTransform(a_gameObjectDef.Translation, a_gameObjectDef.Rotation, a_gameObjectDef.Scale) * a_parentTransform;
 
             RenderComponents(a_gameObjectDef, true, mat);
 

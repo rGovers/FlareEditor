@@ -13,7 +13,7 @@ namespace FlareEditor
         extern static uint GetCheckbox(string a_label, IntPtr a_bool);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        extern static string GetDef(string a_label, string a_preview, string a_path);
+        extern static string GetDef(string a_label, string a_preview);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         extern static uint GetInt(string a_label, IntPtr a_int);
@@ -114,6 +114,17 @@ namespace FlareEditor
             return ret;
         }
 
+        public static bool REnumField<T>(string a_label, ref T a_enum, T a_default) where T : Enum
+        {
+            object e = a_enum;
+            bool ret = REnumField(a_label, ref e, a_default);
+            if (ret)
+            {
+                a_enum = (T)e;
+            }
+
+            return ret; 
+        }
         public static bool REnumField(string a_label, ref object a_enum, object a_default)
         {
             bool ret = false;
@@ -130,6 +141,17 @@ namespace FlareEditor
             if (EnumField(a_label, ref a_enum))
             {
                 ret = true;
+            }
+
+            return ret;
+        }
+        public static bool EnumField<T>(string a_label, ref T a_enum) where T : Enum
+        {
+            object e = a_enum;
+            bool ret = EnumField(a_label, ref e);
+            if (ret)
+            {
+                a_enum = (T)e;
             }
 
             return ret;
@@ -508,24 +530,18 @@ namespace FlareEditor
         }
         public static bool DefField(string a_label, ref Def a_def)
         {
-            string path = string.Empty;
             string preview = null;
             if (a_def != null)
             {
-                path = a_def.DefPath;
                 preview = a_def.DefName;
             }
 
-            if (path == null)
-            {
-                path = string.Empty;
-            }
             if (preview == null)
             {
                 preview = "Null";
             }
 
-            string ret = GetDef(a_label, preview, path);
+            string ret = GetDef(a_label, preview);
             if (ret != null)
             {
                 a_def = null;

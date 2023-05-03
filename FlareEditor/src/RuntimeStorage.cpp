@@ -188,7 +188,7 @@ FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(Model, GenerateFromFile), Mono
         uint32_t size;
         library->GetAsset(p, &size, &dat);
 
-        if (FlareBase::OBJLoader_LoadData(dat, size, &vertices, &indices))
+        if (dat != nullptr && size > 0 && FlareBase::OBJLoader_LoadData(dat, size, &vertices, &indices))
         {
             return Instance->GenerateModel(vertices.data(), (uint32_t)vertices.size(), indices.data(), (uint32_t)indices.size(), sizeof(FlareBase::Vertex));
         }
@@ -199,7 +199,7 @@ FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(Model, GenerateFromFile), Mono
         uint32_t size;
         library->GetAsset(p, &size, &dat);
 
-        if (FlareBase::ColladaLoader_LoadData(dat, size, &vertices, &indices))
+        if (dat != nullptr && size > 0 && FlareBase::ColladaLoader_LoadData(dat, size, &vertices, &indices))
         {
             return Instance->GenerateModel(vertices.data(), (uint32_t)vertices.size(), indices.data(), (uint32_t)indices.size(), sizeof(FlareBase::Vertex));
         }

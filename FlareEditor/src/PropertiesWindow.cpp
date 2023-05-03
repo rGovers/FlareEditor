@@ -1,5 +1,8 @@
 #include "Windows/PropertiesWindow.h"
 
+#include <imgui.h>
+
+#include "GUI.h"
 #include "Runtime/RuntimeManager.h"
 
 PropertiesWindow::PropertiesWindow(RuntimeManager* a_runtime) : Window("Properties")
@@ -13,5 +16,7 @@ PropertiesWindow::~PropertiesWindow()
 
 void PropertiesWindow::Update(double a_delta)
 {
+    GUI::SetWidth(ImGui::GetWindowSize().x);
+
     m_runtime->ExecFunction("FlareEditor", "AssetProperties", ":OnGUI", NULL);
 }

@@ -1,3 +1,4 @@
+using FlareEditor.Properties;
 using FlareEngine;
 using FlareEngine.Definitions;
 using System;

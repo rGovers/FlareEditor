@@ -1,3 +1,4 @@
+using FlareEngine;
 using FlareEngine.Definitions;
 using FlareEngine.Maths;
 using System;
@@ -9,7 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
 
-namespace FlareEditor
+namespace FlareEditor.Properties
 {
     [AttributeUsage(AttributeTargets.Class)]
     public class PWindowAttribute : Attribute
@@ -37,7 +38,7 @@ namespace FlareEditor
 
         const string DefintionNamespace = "FlareEngine.Definitions.";
 
-        void ShowFields(string a_name, ref object a_obj, object a_normVal, Type a_type)
+        static void ShowFields(string a_name, ref object a_obj, object a_normVal, Type a_type)
         {
             switch (a_obj)
             {
@@ -531,7 +532,7 @@ namespace FlareEditor
             {
                 string path = a_paths[i];
 
-                if (path == "[Scene]")
+                if (path == Def.SceneDefPath)
                 {
                     continue;
                 }
@@ -612,7 +613,7 @@ namespace FlareEditor
             }
         }
 
-        public virtual void OnGUI(object a_object)
+        public static void BaseGUI(object a_object)
         {
             Type objType = a_object.GetType();
 
@@ -645,6 +646,11 @@ namespace FlareEditor
                     GUI.Tooltip(fName, tooltip.Tooltip);
                 }
             }
+        }
+
+        public virtual void OnGUI(object a_object)
+        {
+            BaseGUI(a_object);
         }
     }
 }

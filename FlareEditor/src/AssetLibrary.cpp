@@ -7,7 +7,7 @@
 
 static AssetLibrary* Instance = nullptr;
 
-FLARE_MONO_EXPORT(void, PropertiesWindow_WriteDef, MonoString* a_path, MonoArray* a_data)
+FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(PropertiesWindow, WriteDef), MonoString* a_path, MonoArray* a_data)
 {
     mono_unichar4* str = mono_string_to_utf32(a_path);
     const std::filesystem::path p = std::filesystem::path(std::u32string((char32_t*)str));
@@ -27,9 +27,9 @@ FLARE_MONO_EXPORT(void, PropertiesWindow_WriteDef, MonoString* a_path, MonoArray
 
 AssetLibrary::AssetLibrary(RuntimeManager* a_runtime)
 {
-    m_runtime->BindFunction("FlareEditor.PropertiesWindow::WriteDef", (void*)PropertiesWindow_WriteDef);
-
     m_runtime = a_runtime;
+
+    BIND_FUNCTION(m_runtime, FlareEditor.Properties, PropertiesWindow, WriteDef);
     
     Instance = this;
 }
@@ -432,7 +432,7 @@ void AssetLibrary::Serialize(const std::filesystem::path& a_workingDir) const
         pathArray
     };
 
-    m_runtime->ExecFunction("FlareEditor", "PropertiesWindow", ":SerializeDefs(string[])", args);
+    m_runtime->ExecFunction("FlareEditor.Properties", "PropertiesWindow", ":SerializeDefs(string[])", args);
 
     for (const Asset& a : m_assets)
     {

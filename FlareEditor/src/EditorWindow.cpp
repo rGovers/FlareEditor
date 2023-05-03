@@ -166,6 +166,11 @@ void EditorWindow::Update(double a_delta)
         m_refresh = true;
     }
 
+    if (m_width <= 0 || m_height <= 0)
+    {
+        return;
+    }
+
     if (ImGui::IsWindowFocused() || ImGui::IsWindowHovered())
     {
         const ImVec2 imPos = ImGui::GetMousePos();

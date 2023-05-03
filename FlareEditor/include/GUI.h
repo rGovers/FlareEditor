@@ -11,7 +11,10 @@ private:
     RuntimeManager*        m_runtime;
     std::list<std::string> m_id;
 
+    float                  m_width;
+
     GUI(RuntimeManager* a_runtime);
+
 protected:
 
 public:
@@ -22,6 +25,21 @@ public:
         return m_runtime;
     }
     std::string GetID() const;
+
+    inline float GetWidth() const
+    {
+        return m_width;
+    }
+    inline float GetTextWidth() const
+    {
+        return m_width * 0.3f;
+    }
+    inline float GetFieldWidth() const
+    {
+        return m_width * 0.6f;
+    }
+
+    static void SetWidth(float a_width);
 
     inline void PushID(const std::string_view& a_str)
     {
