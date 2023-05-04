@@ -426,6 +426,15 @@ FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(GUI, SameLine))
     ImGui::SameLine();
 }
 
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, GetShiftModifier))
+{
+    return (uint32_t)(ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift));
+}
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(GUI, GetCtrlModifier))
+{
+    return (uint32_t)(ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl));
+}
+
 GUI::GUI(RuntimeManager* a_runtime)
 {
     m_runtime = a_runtime;
@@ -478,6 +487,9 @@ void GUI::Init(RuntimeManager* a_runtime)
         BIND_FUNCTION(a_runtime, FlareEditor, GUI, NodeI);
         BIND_FUNCTION(a_runtime, FlareEditor, GUI, PopNode);
         BIND_FUNCTION(a_runtime, FlareEditor, GUI, SameLine);
+
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, GetShiftModifier);
+        BIND_FUNCTION(a_runtime, FlareEditor, GUI, GetCtrlModifier);
     }
 }
 void GUI::Destroy()

@@ -11,13 +11,17 @@ static Workspace* Instance = nullptr;
 
 #define WORKSPACE_BINDING_FUNCTION_TABLE(F) \
     F(MonoString*, FlareEditor, Workspace, GetCurrentScene, {  return mono_string_new_wrapper(Instance->GetCurrentScene().string().c_str()); }) \
-    F(void, FlareEditor, Workspace, SetCurrentScene, { char* str = mono_string_to_utf8(a_path); Instance->SetCurrentScene(str); mono_free(str); }, MonoString* a_path) 
+    F(void, FlareEditor, Workspace, SetCurrentScene, { char* str = mono_string_to_utf8(a_path); Instance->SetCurrentScene(str); mono_free(str); }, MonoString* a_path) \
+    \
+    F(uint32_t, FlareEditor, Workspace, GetManipulationMode, { return (uint32_t)Instance->GetManipulationMode(); })
 
 WORKSPACE_BINDING_FUNCTION_TABLE(RUNTIME_FUNCTION_DEFINITION);
 
 Workspace::Workspace(RuntimeManager* a_runtime)
 {
     m_runtime = a_runtime;
+
+    m_manipulationMode = ManipulationMode_Translate;
 
     WORKSPACE_BINDING_FUNCTION_TABLE(WORKSPACE_RUNTIME_ATTACH);
 

@@ -11,3 +11,5 @@ rm -rf bin/crossbuild
 rm -f bin/*.dll
 rm -f bin/*.exe
 rm -f bin/FlareNative
+
+rm -rf FlareEngine/FlareCS/obj

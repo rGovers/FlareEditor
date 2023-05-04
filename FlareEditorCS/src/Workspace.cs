@@ -1,14 +1,172 @@
 using FlareEngine;
+using FlareEngine.Definitions;
+using FlareEngine.Maths;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace FlareEditor
 {
+    public struct GameObjectData
+    {
+        public ulong ID;
+        public GameObjectDef Def;
+    }
+    public struct SceneObjectData
+    {
+        public ulong ID;
+        public SceneObject Object;
+    }
+
+    public enum SelectionObjectMode
+    {
+        SceneObject,
+        GameObjectDef
+    }
+
+    public struct SelectionObject
+    {
+        public ulong ID;
+        public SelectionObjectMode SelectionMode;
+        public SceneObject SceneObject;
+        public GameObjectDef GameObject;
+
+        public Vector3 Translation
+        {
+            get
+            {
+                switch (SelectionMode)
+                {
+                case SelectionObjectMode.GameObjectDef:
+                {
+                    return GameObject.Translation;
+                }
+                case SelectionObjectMode.SceneObject:
+                {
+                    return SceneObject.Translation;
+                }
+                }
+
+                return Vector3.Zero;
+            }
+            set
+            {
+                switch (SelectionMode)
+                {
+                case SelectionObjectMode.GameObjectDef:
+                {
+                    GameObject.Translation = value;
+
+                    break;
+                }
+                case SelectionObjectMode.SceneObject:
+                {
+                    SceneObject.Translation = value;
+
+                    break;
+                }
+                }
+            }
+        }
+
+        public Quaternion Rotation
+        {
+            get
+            {
+                switch (SelectionMode)
+                {
+                case SelectionObjectMode.GameObjectDef:
+                {
+                    return GameObject.Rotation;
+                }
+                case SelectionObjectMode.SceneObject:
+                {
+                    return SceneObject.Rotation;
+                }
+                }
+
+                return Quaternion.Identity;
+            }
+            set
+            {
+                switch (SelectionMode)
+                {
+                case SelectionObjectMode.GameObjectDef:
+                {
+                    GameObject.Rotation = value;
+
+                    break;
+                }
+                case SelectionObjectMode.SceneObject:
+                {
+                    SceneObject.Rotation = value;
+
+                    break;
+                }
+                }
+            }
+        }
+
+        public Vector3 Scale
+        {
+            get
+            {
+                switch (SelectionMode)
+                {
+                case SelectionObjectMode.GameObjectDef:
+                {
+                    return GameObject.Scale;
+                }
+                case SelectionObjectMode.SceneObject:
+                {
+                    return SceneObject.Scale;
+                }
+                }
+
+                return Vector3.Zero;
+            }
+            set
+            {
+                switch (SelectionMode)
+                {
+                case SelectionObjectMode.GameObjectDef:
+                {
+                    GameObject.Scale = value;
+
+                    break;
+                }
+                case SelectionObjectMode.SceneObject:
+                {
+                    SceneObject.Scale = value;
+
+                    break;
+                }
+                }
+            }
+        }
+    }
+
     public static class Workspace
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
         extern static string GetCurrentScene();
         [MethodImpl(MethodImplOptions.InternalCall)]
         extern static void SetCurrentScene(string a_path);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        extern static uint GetManipulationMode();
+
+        static ulong                 s_ID = 0;
+
+        static Scene                 s_LastScene = null;
+
+        static List<SceneObjectData> s_sceneObjectList = new List<SceneObjectData>();
+        static List<GameObjectData>  s_gameObjectList = new List<GameObjectData>();
+
+        public static ulong NewID()
+        {
+            return s_ID++;
+        }
+
+        public static List<SelectionObject> Selection;
 
         public static string CurrentScenePath
         {
@@ -19,6 +177,73 @@ namespace FlareEditor
             set
             {
                 SetCurrentScene(value);
+            }
+        }
+
+        public static IEnumerable<GameObjectData> ObjectList
+        {
+            get
+            {
+                return s_gameObjectList;
+            }
+        }
+        public static IEnumerable<SceneObjectData> SceneObjectList
+        {
+            get
+            {
+                return s_sceneObjectList;
+            }
+        }
+
+        public static ManipulationMode ManipulationMode
+        {
+            get
+            {
+                return (ManipulationMode)GetManipulationMode();
+            }
+        }
+
+        public static ulong GetID(GameObjectDef a_object)
+        {
+            foreach (GameObjectData dat in s_gameObjectList)
+            {
+                if (dat.Def == a_object)
+                {
+                    return dat.ID;
+                }
+            }
+
+            return ulong.MaxValue;
+        }
+        public static ulong GetID(SceneObject a_object)
+        {
+            foreach (SceneObjectData dat in s_sceneObjectList)
+            {
+                if (dat.Object == a_object)
+                {
+                    return dat.ID;
+                }
+            }
+
+            return ulong.MaxValue;
+        }
+
+        static void GetObjects(GameObjectDef a_def)
+        {
+            if (a_def == null)
+            {
+                return;
+            }
+
+            s_gameObjectList.Add(new GameObjectData()
+            {
+                ID = NewID(),
+                Def = a_def
+            });
+
+            foreach (GameObjectDef child in a_def.Children)
+            {
+                GetObjects(child);
             }
         }
 
@@ -36,6 +261,25 @@ namespace FlareEditor
                 SetCurrentScene(string.Empty);
 
                 return null;
+            }
+
+            if (s != s_LastScene)
+            {
+                s_sceneObjectList.Clear();
+                s_gameObjectList.Clear();
+
+                foreach (SceneObject obj in s.SceneObjects)
+                {
+                    s_sceneObjectList.Add(new SceneObjectData()
+                    {
+                        ID = NewID(),
+                        Object = obj
+                    });
+
+                    GetObjects(DefLibrary.GetDef<GameObjectDef>(obj.DefName));
+                }
+
+                s_LastScene = s;
             }
 
             return s;

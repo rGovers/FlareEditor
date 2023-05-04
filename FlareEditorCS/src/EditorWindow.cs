@@ -8,13 +8,24 @@ using System.Reflection;
 
 namespace FlareEditor
 {
+    struct TransformData
+    {
+        public Vector3 StartPos;
+        public Quaternion StartRotation;
+        public Vector3 StartScale;
+    }
+
     public static class EditorWindow
     {
         static Dictionary<Type, EditorDisplay> s_componentLookup;
 
+        static List<TransformData>             s_startData;
+        static Vector3                         s_startPos;
+
         internal static void Init()
         {
             s_componentLookup = new Dictionary<Type, EditorDisplay>();
+            s_startData = new List<TransformData>();
 
             Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
             foreach (Assembly asm in assemblies)
@@ -70,6 +81,61 @@ namespace FlareEditor
             if (scene == null)
             {
                 return;
+            }
+
+            if (Workspace.Selection != null)
+            {
+                int selectionSize = Workspace.Selection.Count;
+                if (selectionSize > 0)
+                {
+                    Vector3 mid = Vector3.Zero;
+
+                    foreach (SelectionObject sel in Workspace.Selection)
+                    {
+                        mid += sel.Translation;
+                    }
+
+                    mid /= selectionSize;
+
+                    Quaternion rot = Quaternion.Identity;
+                    Vector3 scale = Vector3.One;
+
+                    if (!Gizmos.IsManipulating)
+                    {
+                        s_startData.Clear();
+
+                        s_startPos = mid;
+
+                        foreach (SelectionObject sel in Workspace.Selection)
+                        {
+                            s_startData.Add(new TransformData()
+                            {
+                                StartPos = sel.Translation,
+                                StartRotation = sel.Rotation,
+                                StartScale = sel.Scale
+                            });
+                        }
+                    }
+
+                    if (Gizmos.Manipulation(Workspace.ManipulationMode, ref mid, ref rot, ref scale))
+                    {
+                        Vector3 deltaPos = mid - s_startPos;
+
+                        for (int i = 0; i < selectionSize; ++i)
+                        {
+                            TransformData dat = s_startData[i];
+                            Vector3 objDeltaPos = dat.StartPos - s_startPos;
+
+                            SelectionObject sel = Workspace.Selection[i];
+
+                            sel.Translation = objDeltaPos + deltaPos;
+                            sel.Rotation = dat.StartRotation * rot;
+                            sel.Scale = dat.StartScale * scale;
+
+                            Workspace.Selection[i] = sel;
+                        }
+                    }
+                }
             }
 
             foreach (SceneObject obj in scene.SceneObjects)

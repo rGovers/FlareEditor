@@ -90,7 +90,8 @@ RuntimeManager::RuntimeManager()
 
     mono_set_dirs("./lib", "./etc");
 
-    m_mainDomain = mono_jit_init_version("FlareCS", "v4.0");
+    // m_mainDomain = mono_jit_init_version("FlareCS", "v4.0");
+    m_mainDomain = mono_jit_init("FlareCS");
 
     m_editorDomain = nullptr;
 
@@ -202,7 +203,7 @@ void RuntimeManager::Start()
 
     m_editorDomain = mono_domain_create_appdomain("FlareEditor", NULL);
     assert(m_editorDomain != nullptr);
-    mono_domain_set(m_editorDomain, 0);
+    mono_domain_set(m_editorDomain, 1);
 
     m_editorAssembly = mono_domain_assembly_open(m_editorDomain, "./FlareEditorCS.dll");
     assert(m_editorAssembly != nullptr);

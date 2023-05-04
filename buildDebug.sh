@@ -23,7 +23,7 @@ echo
 cd ..
 mv build/FlareNative FlareNative
 mv ../FlareEditorCS/bin/FlareCS.exe FlareCS.dll
-mv ../FlareEditorCS/bin/FlareEditorCS.dll FlareEditorCS.dll
+mv ../FlareEditorCS/bin/FlareEditorCS.exe FlareEditorCS.dll
 cp -r ../FlareEngine/deps/flare-mono/build/lib .
 cp -r ../FlareEngine/deps/flare-mono/build/etc .
 echo

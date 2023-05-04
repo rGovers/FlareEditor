@@ -111,9 +111,9 @@ void AssetBrowserWindow::Update(double a_delta)
     if (ImGui::BeginChild("##FolderView", { 200.0f, contentRegion.y }))
     {
         TraverseFolderTree(0);
-
-        ImGui::EndChild();
     }
+
+    ImGui::EndChild();
 
     ImGui::SameLine();
 

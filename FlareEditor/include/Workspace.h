@@ -6,6 +6,8 @@
 class EditorWindow;
 class RuntimeManager;
 
+#include "Gizmos.h"
+
 class Workspace
 {
 private:
@@ -14,6 +16,8 @@ private:
     std::filesystem::path      m_currentScene;
 
     std::filesystem::path      m_selectionPath;
+
+    e_ManipulationMode         m_manipulationMode;
 
     std::vector<EditorWindow*> m_editorWindows;
 
@@ -30,6 +34,15 @@ public:
     inline void SetCurrentScene(const std::filesystem::path& a_path)
     {
         m_currentScene = a_path;
+    }
+
+    inline e_ManipulationMode GetManipulationMode() const
+    {
+        return m_manipulationMode;
+    }
+    inline void SetManipulationMode(e_ManipulationMode a_mode) 
+    {
+        m_manipulationMode = a_mode;
     }
 
     inline RuntimeManager* GetRuntime() const

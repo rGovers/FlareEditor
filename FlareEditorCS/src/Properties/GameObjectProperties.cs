@@ -77,7 +77,7 @@ namespace FlareEditor.Properties
             {
                 Vector4 rot = def.Rotation.ToVector4();
 
-                if (GUI.Vec4Field("Quatenion", ref rot))
+                if (GUI.Vec4Field("Quaternion", ref rot))
                 {
                     def.Rotation = rot.ToQuaternion();
 

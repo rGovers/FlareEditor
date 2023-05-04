@@ -22,6 +22,13 @@ struct GizmoVertex
     }
 };
 
+enum e_ManipulationMode : uint16_t
+{
+    ManipulationMode_Translate = 0,
+    ManipulationMode_Rotate = 1,
+    ManipulationMode_Scale = 2
+};
+
 class Gizmos
 {
 private:
@@ -35,7 +42,11 @@ private:
     std::vector<GizmoVertex>  m_vertices;
     std::vector<GLuint>       m_indices;
 
+    glm::mat4                 m_view;
+    glm::mat4                 m_proj;
+
     Gizmos();
+    
 protected:
 
 public:
@@ -44,7 +55,11 @@ public:
     static void Init(RuntimeManager* a_runtime);
     static void Destroy();
 
+    static void SetMatrices(const glm::mat4& a_view, const glm::mat4& a_proj);
+
+    static bool Manipulation(e_ManipulationMode a_mode, glm::vec3* a_translation, glm::quat* a_rotation, glm::vec3* a_scale);
+
     static void DrawLine(const glm::vec3& a_start, const glm::vec3& a_end, float a_width = 0.1f, const glm::vec4& a_color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-    static void Render(const glm::mat4& a_transform);
+    static void Render();
 };

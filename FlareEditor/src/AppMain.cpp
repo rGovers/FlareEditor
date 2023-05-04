@@ -1,6 +1,7 @@
 #include "AppMain.h"
 
 #include <imgui.h>
+#include <ImGuizmo.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <implot.h>
@@ -111,9 +112,6 @@ static void SetImguiStyle()
     style.ChildBorderSize = 0.0f;
     style.PopupBorderSize = 0.0f;
     style.WindowMenuButtonPosition = ImGuiDir_Right;
-
-    ImVec4* colors = style.Colors;
-    // colors[ImGuiCol_WindowBg]               = ImVec4(0.00f, 0.00f, 0.06f, 0.94f);
 }
 
 AppMain::AppMain() : Application(1280, 720, "FlareEditor")
@@ -212,6 +210,7 @@ void AppMain::Update(double a_delta, double a_time)
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+    ImGuizmo::BeginFrame();
 
     GLFWwindow* window = GetWindow();
 

@@ -7,3 +7,6 @@
 [submodule "FlareEditor/lib/implot"]
 	path = FlareEditor/lib/implot
 	url = https://github.com/epezent/implot.git
+[submodule "FlareEditor/lib/ImGuizmo"]
+	path = FlareEditor/lib/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git

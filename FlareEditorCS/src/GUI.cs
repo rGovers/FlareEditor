@@ -72,6 +72,26 @@ namespace FlareEditor
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern static void SameLine();
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        extern static uint GetShiftModifier();
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        extern static uint GetCtrlModifier();
+
+        public static bool ShiftModifier
+        {
+            get
+            {
+                return GetShiftModifier() != 0;
+            }
+        }
+        public static bool CtrlModifier
+        {
+            get
+            {
+                return GetCtrlModifier() != 0;
+            }
+        }
+
         public static bool RCheckbox(string a_label, ref bool a_value, bool a_default)
         {
             bool ret = false;

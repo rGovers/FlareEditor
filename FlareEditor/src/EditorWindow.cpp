@@ -2,6 +2,7 @@
 
 #include <glm/ext/matrix_clip_space.hpp>
 #include <imgui.h>
+#include <ImGuizmo.h>
 
 #include "Gizmos.h"
 #include "PixelShader.h"
@@ -98,8 +99,13 @@ void EditorWindow::Draw()
 {
     m_refresh = false;
 
+    ImGuizmo::SetDrawlist();
+
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebufferHandle);
     glViewport(0, 0, (GLsizei)m_width, (GLsizei)m_height);
+    const ImVec2 wPos = ImGui::GetWindowPos();
+    const ImVec2 min = ImGui::GetWindowContentRegionMin();
+    ImGuizmo::SetRect(wPos.x + min.x, wPos.y + min.y, m_width, m_height);
 
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
@@ -122,6 +128,7 @@ void EditorWindow::Draw()
     camBuffer.ViewProj = proj * view;
 
     RenderCommand::PushCameraBuffer(camBuffer);
+    Gizmos::SetMatrices(view, proj);
 
     m_runtime->ExecFunction("FlareEditor", "EditorWindow", ":OnGUI()", nullptr);
 
@@ -136,14 +143,14 @@ void EditorWindow::Draw()
     glCullFace(GL_BACK);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    glUniformMatrix4fv(0, 1, GL_FALSE, (GLfloat *)&view);
-    glUniformMatrix4fv(1, 1, GL_FALSE, (GLfloat *)&proj);
+    glUniformMatrix4fv(0, 1, GL_FALSE, (GLfloat*)&view);
+    glUniformMatrix4fv(1, 1, GL_FALSE, (GLfloat*)&proj);
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     glDisable(GL_BLEND);
 
-    Gizmos::Render(proj * view);
+    Gizmos::Render();
 }
 
 void EditorWindow::Update(double a_delta)
@@ -170,6 +177,8 @@ void EditorWindow::Update(double a_delta)
     {
         return;
     }
+
+    ImGui::Image((ImTextureID)m_textureHandle, sizeIm);
 
     if (ImGui::IsWindowFocused() || ImGui::IsWindowHovered())
     {
@@ -221,6 +230,4 @@ void EditorWindow::Update(double a_delta)
     {
         Draw();
     }
-
-    ImGui::Image((ImTextureID)m_textureHandle, sizeIm);
 }
