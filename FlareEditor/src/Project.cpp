@@ -107,7 +107,17 @@ void Project::NewCallback(const std::filesystem::path& a_path, const std::string
 void Project::OpenCallback(const std::filesystem::path& a_path, const std::string_view& a_name)
 {
     m_path = a_path;
-    m_name = std::string(a_name);
+
+    // Want to strip out extension if it exists
+    const std::size_t extPos = a_name.find_last_of(".");
+    if (extPos == std::string_view::npos)
+    {
+        m_name = std::string(a_name);
+    }
+    else
+    {
+        m_name = std::string(a_name, 0, extPos);
+    }
 
     GenerateDirs(m_path);
 

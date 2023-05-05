@@ -180,12 +180,22 @@ namespace FlareEditor
             {
                 string name = obj.DefName;
 
+                GameObjectDef def = DefLibrary.GetDef<GameObjectDef>(name);
+                if (def == null)
+                {
+                    continue;
+                }
+
                 ulong id = Workspace.GetID(obj);
                 string idStr = $"##[{id}]{obj.DefName}";
 
-                bool show = GUI.Node(idStr);
+                bool show = false;
+                if (def.IsSceneDef)
+                {
+                    show = GUI.Node(idStr);
 
-                GUI.SameLine();
+                    GUI.SameLine();
+                }
 
                 GUI.PushID(idStr);
 
@@ -203,8 +213,6 @@ namespace FlareEditor
 
                 if (show)
                 {
-                    GameObjectDef def = DefLibrary.GetDef<GameObjectDef>(name);
-
                     DisplayObject(def, ref selectionID, ref selectionList, true);
 
                     GUI.PopNode();

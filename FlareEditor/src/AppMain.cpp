@@ -155,7 +155,7 @@ AppMain::AppMain() : Application(1280, 720, "FlareEditor")
     FileHandler::Init(m_workspace);
     
     m_windows.emplace_back(new ConsoleWindow());
-    m_windows.emplace_back(new ControlWindow(this, m_process, m_runtime, m_project));
+    m_windows.emplace_back(new ControlWindow(this, m_process, m_runtime, m_workspace, m_project));
     m_windows.emplace_back(new EditorWindow(m_runtime, m_workspace));
     m_windows.emplace_back(new GameWindow(m_process));
     m_windows.emplace_back(new AssetBrowserWindow(m_project, m_assets));
@@ -284,7 +284,7 @@ void AppMain::Update(double a_delta, double a_time)
             {
                 if (ImGui::MenuItem("Control"))
                 {
-                    m_windows.emplace_back(new ControlWindow(this, m_process, m_runtime, m_project));
+                    m_windows.emplace_back(new ControlWindow(this, m_process, m_runtime, m_workspace, m_project));
                 }
 
                 if (ImGui::MenuItem("Editor"))

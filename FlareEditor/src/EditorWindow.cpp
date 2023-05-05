@@ -210,7 +210,7 @@ void EditorWindow::Update(double a_delta)
             {
                 mov += m_rotation * glm::vec3(0.0f, -1.0f, 0.0f);
             }
-            if (ImGui::IsKeyDown(ImGuiKey_LeftCtrl))
+            if (ImGui::IsKeyDown(ImGuiKey_LeftShift))
             {
                 mov += m_rotation * glm::vec3(0.0f, 1.0f, 0.0f);
             }
@@ -220,6 +220,21 @@ void EditorWindow::Update(double a_delta)
             m_rotation = glm::angleAxis(mMov.x * 0.01f, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::angleAxis(-mMov.y * 0.01f, m_rotation * glm::vec3(1.0f, 0.0f, 0.0f)) * m_rotation;
 
             m_translation += mov * m_scroll * (float)a_delta;
+        }
+        else
+        {
+            if (ImGui::IsKeyPressed(ImGuiKey_Q))
+            {
+                m_workspace->SetManipulationMode(ManipulationMode_Translate);
+            }
+            if (ImGui::IsKeyPressed(ImGuiKey_W))
+            {
+                m_workspace->SetManipulationMode(ManipulationMode_Rotate);
+            }
+            if (ImGui::IsKeyPressed(ImGuiKey_E))
+            {
+                m_workspace->SetManipulationMode(ManipulationMode_Scale);
+            }
         }
 
         m_prevMousePos = mPos;

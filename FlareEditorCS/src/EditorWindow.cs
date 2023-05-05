@@ -117,6 +117,7 @@ namespace FlareEditor
                         }
                     }
 
+                    // TODO: Account for world space
                     if (Gizmos.Manipulation(Workspace.ManipulationMode, ref mid, ref rot, ref scale))
                     {
                         Vector3 deltaPos = mid - s_startPos;
