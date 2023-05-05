@@ -158,15 +158,16 @@ namespace FlareEditor
 
         static Scene                 s_LastScene = null;
 
-        static List<SceneObjectData> s_sceneObjectList = new List<SceneObjectData>();
-        static List<GameObjectData>  s_gameObjectList = new List<GameObjectData>();
+        public static List<Def> SceneDefs = new List<Def>();
+        public static List<SceneObjectData> SceneObjectList = new List<SceneObjectData>();
+        public static List<GameObjectData>  SceneGameObjectList = new List<GameObjectData>();
 
+        public static List<SelectionObject> Selection;
+        
         public static ulong NewID()
         {
             return s_ID++;
         }
-
-        public static List<SelectionObject> Selection;
 
         public static string CurrentScenePath
         {
@@ -180,21 +181,6 @@ namespace FlareEditor
             }
         }
 
-        public static IEnumerable<GameObjectData> ObjectList
-        {
-            get
-            {
-                return s_gameObjectList;
-            }
-        }
-        public static IEnumerable<SceneObjectData> SceneObjectList
-        {
-            get
-            {
-                return s_sceneObjectList;
-            }
-        }
-
         public static ManipulationMode ManipulationMode
         {
             get
@@ -205,7 +191,7 @@ namespace FlareEditor
 
         public static ulong GetID(GameObjectDef a_object)
         {
-            foreach (GameObjectData dat in s_gameObjectList)
+            foreach (GameObjectData dat in SceneGameObjectList)
             {
                 if (dat.Def == a_object)
                 {
@@ -217,7 +203,7 @@ namespace FlareEditor
         }
         public static ulong GetID(SceneObject a_object)
         {
-            foreach (SceneObjectData dat in s_sceneObjectList)
+            foreach (SceneObjectData dat in SceneObjectList)
             {
                 if (dat.Object == a_object)
                 {
@@ -235,7 +221,7 @@ namespace FlareEditor
                 return;
             }
 
-            s_gameObjectList.Add(new GameObjectData()
+            SceneGameObjectList.Add(new GameObjectData()
             {
                 ID = NewID(),
                 Def = a_def
@@ -265,12 +251,18 @@ namespace FlareEditor
 
             if (s != s_LastScene)
             {
-                s_sceneObjectList.Clear();
-                s_gameObjectList.Clear();
+                SceneDefs.Clear();
+                SceneObjectList.Clear();
+                SceneGameObjectList.Clear();
+
+                foreach (Def def in s.Defs)
+                {
+                    SceneDefs.Add(def);
+                }
 
                 foreach (SceneObject obj in s.SceneObjects)
                 {
-                    s_sceneObjectList.Add(new SceneObjectData()
+                    SceneObjectList.Add(new SceneObjectData()
                     {
                         ID = NewID(),
                         Object = obj

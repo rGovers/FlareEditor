@@ -2,12 +2,13 @@
 
 #include <fstream>
 
+#include "Flare/FlareAssert.h"
 #include "Logger.h"
 #include "Runtime/RuntimeManager.h"
 
 static AssetLibrary* Instance = nullptr;
 
-FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(PropertiesWindow, WriteDef), MonoString* a_path, MonoArray* a_data)
+FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(AssetProperties, WriteDef), MonoString* a_path, MonoArray* a_data)
 {
     mono_unichar4* str = mono_string_to_utf32(a_path);
     const std::filesystem::path p = std::filesystem::path(std::u32string((char32_t*)str));
@@ -24,12 +25,29 @@ FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(PropertiesWindow, WriteDef), MonoS
 
     mono_free(str);
 }
+FLARE_MONO_EXPORT(void, RUNTIME_FUNCTION_NAME(SceneData, WriteScene), MonoString* a_path, MonoArray* a_data)
+{
+    mono_unichar4* str = mono_string_to_utf32(a_path);
+    const std::filesystem::path p = std::filesystem::path(std::u32string((char32_t*)str));
+    mono_free(str);
+
+    const uintptr_t len = mono_array_length(a_data);
+
+    char* data = new char[len];
+    for (uintptr_t i = 0; i < len; ++i)
+    {
+        data[i] = (char)mono_array_get(a_data, mono_byte, i);
+    }
+
+    Instance->WriteScene(p, (uint32_t)len, data);
+}
 
 AssetLibrary::AssetLibrary(RuntimeManager* a_runtime)
 {
     m_runtime = a_runtime;
 
-    BIND_FUNCTION(m_runtime, FlareEditor.Properties, PropertiesWindow, WriteDef);
+    BIND_FUNCTION(m_runtime, FlareEditor, AssetProperties, WriteDef);
+    BIND_FUNCTION(m_runtime, FlareEditor, SceneData, WriteScene);
     
     Instance = this;
 }
@@ -149,10 +167,45 @@ void AssetLibrary::WriteDef(const std::filesystem::path& a_path, uint32_t a_size
 
         if (a.Path == a_path)
         {
+            if (a.Data != nullptr)
+            {
+                delete[] a.Data;
+            }
+
             a.Data = a_data;
             a.Size = a_size;
+
+            return;
         }
     }
+
+    FLARE_ASSERT_MSG(0, "Def not found");
+}
+
+void AssetLibrary::WriteScene(const std::filesystem::path& a_path, uint32_t a_size, char* a_data)
+{
+    for (Asset& a : m_assets)
+    {
+        if (a.AssetType != AssetType_Scene)
+        {
+            continue;
+        }
+
+        if (a.Path == a_path)
+        {
+            if (a.Data != nullptr)
+            {
+                delete[] a.Data;
+            }
+
+            a.Data = a_data;
+            a.Size = a_size;
+
+            return;
+        }
+    }
+
+    FLARE_ASSERT_MSG(0, "Scene not found");
 }
 
 void AssetLibrary::Refresh(const std::filesystem::path& a_workingDir)
@@ -315,9 +368,23 @@ void AssetLibrary::BuildDirectory(const std::filesystem::path& a_path) const
         }
         case AssetType_Scene:
         {
-            // TODO
+            std::filesystem::path p = a_path / "Core" / "Scenes" / asset.Path.filename();
 
-            continue;
+            std::filesystem::create_directories(p.parent_path());
+
+            std::ofstream file = std::ofstream(p, std::ios_base::binary);
+            if (file.good() && file.is_open())
+            {
+                file.write(asset.Data, asset.Size);
+
+                file.close();
+            }
+            else
+            {
+                Logger::Warning("Failed to write scene: " + p.string());
+            }
+
+            break;
         }
         case AssetType_Script:
         {
@@ -432,7 +499,8 @@ void AssetLibrary::Serialize(const std::filesystem::path& a_workingDir) const
         pathArray
     };
 
-    m_runtime->ExecFunction("FlareEditor.Properties", "PropertiesWindow", ":SerializeDefs(string[])", args);
+    m_runtime->ExecFunction("FlareEditor", "AssetProperties", ":SerializeDefs(string[])", args);
+    m_runtime->ExecFunction("FlareEditor", "SceneData", ":Serialize()", nullptr);
 
     for (const Asset& a : m_assets)
     {

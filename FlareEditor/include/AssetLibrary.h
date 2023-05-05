@@ -44,6 +44,7 @@ public:
     static std::filesystem::path GetRelativePath(const std::filesystem::path& a_relative, const std::filesystem::path& a_path);
 
     void WriteDef(const std::filesystem::path& a_path, uint32_t a_size, char* a_data);
+    void WriteScene(const std::filesystem::path& a_path, uint32_t a_size, char* a_data);
 
     void Refresh(const std::filesystem::path& a_workingDir);
     void BuildDirectory(const std::filesystem::path& a_path) const;
