@@ -17,18 +17,18 @@ namespace FlareEditor
         [MethodImpl(MethodImplOptions.InternalCall)]
         static extern void WriteDef(string a_path, byte[] a_data);
 
-        static PropertiesWindow                     s_defaultWindow;
+        static PropertiesWindow                   s_defaultWindow;
 
-        static Dictionary<string, PropertiesWindow> s_windows;
+        static Dictionary<Type, PropertiesWindow> s_windows;
 
-        static string                               s_defName;
+        static string                             s_defName;
 
         const string DefintionNamespace = "FlareEngine.Definitions.";
 
         internal static void Init()
         {
             s_defaultWindow = new PropertiesWindow();
-            s_windows = new Dictionary<string, PropertiesWindow>();
+            s_windows = new Dictionary<Type, PropertiesWindow>();
 
             Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
@@ -45,7 +45,7 @@ namespace FlareEditor
                             PropertiesWindow window = Activator.CreateInstance(type) as PropertiesWindow;
                             if (window != null)
                             {
-                                s_windows.Add(att.OverrideType.ToString(), window);
+                                s_windows.Add(att.OverrideType, window);
                             }
                             else
                             {
@@ -387,6 +387,8 @@ namespace FlareEditor
 
         static void PushDef(string a_path)
         {
+            Workspace.Selection = new List<SelectionObject>();
+
             List<Def> defs = DefLibrary.GetDefs();
 
             foreach (Def def in defs)
@@ -402,22 +404,33 @@ namespace FlareEditor
             s_defName = null;
         }
 
+        static void DisplayGUI(object a_object)
+        {
+            Type type = a_object.GetType();
+            if (s_windows.ContainsKey(type))
+            {
+                s_windows[type].OnGUI(a_object);
+            }
+            else
+            {
+                s_defaultWindow.OnGUI(a_object);
+            }
+        }
+
         static void OnGUI()
         {
+            if (Workspace.Selection != null && Workspace.Selection.Count > 0)
+            {
+                // TODO: Implement multi selection at some point
+                DisplayGUI(Workspace.Selection[0]);
+            }
+
             if (!string.IsNullOrWhiteSpace(s_defName))
             {
                 Def def = DefLibrary.GetDef(s_defName);
                 if (def != null)
                 {
-                    string type = def.GetType().ToString();
-                    if (s_windows.ContainsKey(type))
-                    {
-                        s_windows[type].OnGUI(def);
-                    }
-                    else
-                    {
-                        s_defaultWindow.OnGUI(def);
-                    }
+                    DisplayGUI(def);
                 }
             }
         }

@@ -29,9 +29,9 @@ namespace FlareEditor.Properties
                 return;
             }
 
-            GUI.EnumField("RotationMode", ref m_mode);
+            GUI.EnumField("Rotation Mode", ref m_mode);
 
-            GUI.Vec3Field("Translation", ref def.Translation);
+            GUI.RVec3Field("Translation", ref def.Translation, Vector3.Zero);
 
             if (m_lastDef != def)
             {
@@ -45,7 +45,7 @@ namespace FlareEditor.Properties
             {
             case RotationMode.Euler:
             {
-                if (GUI.Vec3Field("Euler", ref m_euler))
+                if (GUI.RVec3Field("Euler", ref m_euler, Vector3.Zero))
                 {
                     def.Rotation = Quaternion.FromEuler(m_euler);
 
@@ -56,7 +56,7 @@ namespace FlareEditor.Properties
             }
             case RotationMode.AxisAngle:
             {
-                if (GUI.Vec4Field("AxisAngle", ref m_axisAngle))
+                if (GUI.RVec4Field("Axis Angle", ref m_axisAngle, Vector4.UnitY))
                 {
                     float mag = m_axisAngle.Magnitude;
                     if (mag > 0)
@@ -77,7 +77,7 @@ namespace FlareEditor.Properties
             {
                 Vector4 rot = def.Rotation.ToVector4();
 
-                if (GUI.Vec4Field("Quaternion", ref rot))
+                if (GUI.RVec4Field("Quaternion", ref rot, Vector4.UnitW))
                 {
                     def.Rotation = rot.ToQuaternion();
 

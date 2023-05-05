@@ -416,6 +416,32 @@ namespace FlareEditor
 
             return ret;
         }
+
+        public static bool RQuaternionField(string a_label, ref Quaternion a_quat, Quaternion a_default = default(Quaternion))
+        {
+            Vector4 val = a_quat.ToVector4();
+            if (RVec4Field(a_label, ref val, a_default.ToVector4()))
+            {
+                a_quat = val.ToQuaternion();
+
+                return true;
+            }
+
+            return false;
+        }
+        public static bool QuaternionField(string a_label, ref Quaternion a_quat)
+        {
+            Vector4 val = a_quat.ToVector4();
+            if (Vec4Field(a_label, ref val))
+            {
+                a_quat = val.ToQuaternion();
+
+                return true;
+            }
+
+            return false;
+        }
+        
         public static bool RColorField(string a_label, ref Color a_color, Color a_default = default(Color))
         {
             bool ret = false;

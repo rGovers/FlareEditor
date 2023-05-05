@@ -251,6 +251,8 @@ namespace FlareEditor
 
             if (s != s_LastScene)
             {
+                Selection = new List<SelectionObject>();
+
                 SceneDefs.Clear();
                 SceneObjectList.Clear();
                 SceneGameObjectList.Clear();

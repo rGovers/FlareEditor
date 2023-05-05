@@ -128,6 +128,15 @@ namespace FlareEditor.Properties
 
                 break;
             }
+            case Quaternion val:
+            {
+                if (GUI.RQuaternionField(a_name, ref val, (Quaternion)a_normVal))
+                {
+                    a_obj = val;
+                }
+
+                break;
+            }
             case Color val:
             {
                 if (GUI.RColorField(a_name, ref val, (Color)a_normVal))
@@ -263,7 +272,7 @@ namespace FlareEditor.Properties
                         FieldInfo[] fields = a_type.GetFields();
                         foreach (FieldInfo field in fields)
                         {
-                            if ((field.IsPrivate && field.GetCustomAttributes<SerializableAttribute>() == null) || field.GetCustomAttribute<HideInEditorAttribute>() != null)
+                            if (field.IsStatic || (field.IsPrivate && field.GetCustomAttributes<SerializableAttribute>() == null) || field.GetCustomAttribute<HideInEditorAttribute>() != null)
                             {
                                 continue;
                             }
