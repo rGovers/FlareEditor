@@ -1,5 +1,7 @@
 #include "Runtime/RuntimeStorage.h"
 
+#include <stb_image.h>
+
 #include "AssetLibrary.h"
 #include "Flare/ColladaLoader.h"
 #include "Flare/OBJLoader.h"
@@ -7,6 +9,8 @@
 #include "PixelShader.h"
 #include "Runtime/RuntimeManager.h"
 #include "ShaderGenerator.h"
+#include "ShaderStorage.h"
+#include "Texture.h"
 #include "VertexShader.h"
 
 static RuntimeStorage* Instance = nullptr;
@@ -19,6 +23,15 @@ static RuntimeStorage* Instance = nullptr;
     \
     F(FlareBase::RenderProgram, FlareEngine.Rendering, Material, GetProgramBuffer, { return Instance->GetRenderProgram(a_addr); }, uint32_t a_addr) \
     F(void, FlareEngine.Rendering, Material, SetProgramBuffer, { Instance->SetRenderProgram(a_addr, a_program); }, uint32_t a_addr, FlareBase::RenderProgram a_program) \
+    F(void, FlareEngine.Rendering, Material, SetTexture, { Instance->SetProgramTexture(a_addr, a_slot, a_samplerAddr); }, uint32_t a_addr, uint32_t a_slot, uint32_t a_samplerAddr) \
+    \
+    F(void, FlareEngine.Rendering, Texture, DestroyTexture, { Instance->DestroyTexture(a_addr); }, uint32_t a_addr) \
+    \
+    /* Have not had to but I dont not believe there is a way to seperate the texture and sampler in OpenGL */ \
+    F(uint32_t, FlareEngine.Rendering, TextureSampler, GenerateTextureSampler, { return a_texture; }, uint32_t a_texture, uint32_t a_filter, uint32_t a_addressMode) \
+    F(uint32_t, FlareEngine.Rendering, TextureSampler, GenerateRenderTextureSampler, { return 0; }, uint32_t a_renderTexture, uint32_t a_textureIndex, uint32_t a_filter, uint32_t a_addressMode) \
+    F(uint32_t, FlareEngine.Rendering, TextureSampler, GenerateRenderTextureDepthSampler, { return 0; }, uint32_t a_renderTexture, uint32_t a_filter, uint32_t a_addressMode) \
+    F(void, FlareEngine.Rendering, TextureSampler, DestroySampler, { }, uint32_t a_addr) \
     \
     F(void, FlareEngine.Rendering, Model, DestroyModel, { Instance->DestroyModel(a_addr); }, uint32_t a_addr)
 
@@ -208,6 +221,33 @@ FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(Model, GenerateFromFile), Mono
     return -1;
 }
 
+FLARE_MONO_EXPORT(uint32_t, RUNTIME_FUNCTION_NAME(Texture, GenerateFromFile), MonoString* a_path)
+{
+    char* str = mono_string_to_utf8(a_path);
+    const std::filesystem::path p = std::filesystem::path(str);
+    mono_free(str);
+
+    AssetLibrary* library = Instance->GetLibrary();
+    if (p.extension() == ".png")
+    {
+        const char* dat;
+        uint32_t size;
+
+        if (dat != nullptr && size > 0)
+        {
+            int width;
+            int height;
+            int channels;
+
+            const stbi_uc* pixels = stbi_load_from_memory((stbi_uc*)dat, (int)size, &width, &height, &channels, STBI_rgb_alpha);
+
+            return Instance->GenerateTexture((uint32_t)width, (uint32_t)height, (unsigned char*)pixels);
+        }
+    }
+
+    return -1;
+}
+
 RuntimeStorage::RuntimeStorage(RuntimeManager* a_runtime, AssetLibrary* a_assets)
 {
     m_assets = a_assets;
@@ -221,6 +261,8 @@ RuntimeStorage::RuntimeStorage(RuntimeManager* a_runtime, AssetLibrary* a_assets
 
     BIND_FUNCTION(a_runtime, FlareEngine.Rendering, Model, GenerateModel);
     BIND_FUNCTION(a_runtime, FlareEngine.Rendering, Model, GenerateFromFile);
+
+    BIND_FUNCTION(a_runtime, FlareEngine.Rendering, Texture, GenerateFromFile);
 
     RUNTIMESTORAGE_BINDING_FUNCTION_TABLE(RUNTIMESTORAGE_RUNTIME_ATTACH);
 
@@ -321,20 +363,31 @@ void RuntimeStorage::DestroyPixelShader(uint32_t a_addr)
 
 uint32_t RuntimeStorage::GenerateRenderProgram(const FlareBase::RenderProgram& a_program)
 {
+    FlareBase::RenderProgram program = a_program;
+    ShaderStorage* storage = new ShaderStorage(this);
+    program.Data = storage;
+
     const uint32_t programCount = (uint32_t)m_renderPrograms.size();
     for (uint32_t i = 0; i < programCount; ++i)
     {
         if (m_renderPrograms[i].Flags & 0b1 << FlareBase::RenderProgram::FreeFlag)
-        {
-            m_renderPrograms[i] = a_program;
+        {            
+            m_renderPrograms[i] = program;
 
             return i;
         }
     }
 
-    m_renderPrograms.emplace_back(a_program);
+    m_renderPrograms.emplace_back(program);
 
     return programCount;
+}
+void RuntimeStorage::SetProgramTexture(uint32_t a_addr, uint32_t a_slot, uint32_t a_textureAddr)
+{
+    const FlareBase::RenderProgram& program = m_renderPrograms[a_addr];
+
+    ShaderStorage* storage = (ShaderStorage*)program.Data;
+    storage->SetTexture(a_slot, m_textures[a_textureAddr]);
 }
 void RuntimeStorage::DestroyRenderProgram(uint32_t a_addr)
 {
@@ -344,6 +397,9 @@ void RuntimeStorage::DestroyRenderProgram(uint32_t a_addr)
         DestroyVertexShader(program.VertexShader);
         DestroyPixelShader(program.PixelShader);
     }
+
+    delete (ShaderStorage*)program.Data;
+    program.Data = nullptr;
 
     program.Flags = 0b1 << FlareBase::RenderProgram::FreeFlag;
 }
@@ -371,4 +427,29 @@ void RuntimeStorage::DestroyModel(uint32_t a_addr)
 {
     delete m_models[a_addr];
     m_models[a_addr] = nullptr;
+}
+
+uint32_t RuntimeStorage::GenerateTexture(uint32_t a_width, uint32_t a_height, const unsigned char* a_data)
+{
+    Texture* texture = new Texture(a_width, a_height, a_data);
+
+    const uint32_t textureCount = (uint32_t)m_textures.size();
+    for (uint32_t i = 0; i < textureCount; ++i)
+    {
+        if (m_textures[i] == nullptr)
+        {
+            m_textures[i] = texture;
+
+            return i;
+        }
+    }
+
+    m_textures.emplace_back(texture);
+
+    return textureCount;
+}
+void RuntimeStorage::DestroyTexture(uint32_t a_addr)
+{
+    delete m_textures[a_addr];
+    m_textures[a_addr] = nullptr;
 }

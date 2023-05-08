@@ -6,6 +6,7 @@
 #include "Runtime/RuntimeManager.h"
 #include "Runtime/RuntimeStorage.h"
 #include "ShaderProgram.h"
+#include "ShaderStorage.h"
 #include "UniformBuffer.h"
 
 static RenderCommand* Instance = nullptr;
@@ -131,7 +132,6 @@ void RenderCommand::BindMaterial(uint32_t a_materialAddr)
         {
         case FlareBase::ShaderBufferType_CameraBuffer:
         {
-
             glBindBufferBase(GL_UNIFORM_BUFFER, input.Slot, Instance->m_cameraBuffer->GetHandle());
 
             break;
@@ -143,6 +143,12 @@ void RenderCommand::BindMaterial(uint32_t a_materialAddr)
             break;
         }
         }
+    }
+
+    ShaderStorage* storage = (ShaderStorage*)program.Data;
+    if (storage != nullptr)
+    {
+        storage->Bind();
     }
 
     Instance->m_boundShader = a_materialAddr;

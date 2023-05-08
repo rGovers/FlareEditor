@@ -8,22 +8,26 @@ class AssetLibrary;
 class Model;
 class PixelShader;
 class RuntimeManager;
+class Texture;
 class VertexShader;
 
 #include "Flare/RenderProgram.h"
+#include "Flare/TextureSampler.h"
 
 class RuntimeStorage
 {
 private:
-    AssetLibrary*                         m_assets;
-    RuntimeManager*                       m_runtime;
-    
-    std::vector<Model*>                   m_models;
-    
-    std::vector<VertexShader*>            m_vertexShaders;
-    std::vector<PixelShader*>             m_pixelShaders;
+    AssetLibrary*                          m_assets;
+    RuntimeManager*                        m_runtime;
+     
+    std::vector<Model*>                    m_models;
+    std::vector<Texture*>                  m_textures;
+    std::vector<FlareBase::TextureSampler> m_samplers;
 
-    std::vector<FlareBase::RenderProgram> m_renderPrograms;
+    std::vector<VertexShader*>             m_vertexShaders;
+    std::vector<PixelShader*>              m_pixelShaders;
+
+    std::vector<FlareBase::RenderProgram>  m_renderPrograms;
 
 protected:
 
@@ -51,6 +55,7 @@ public:
     }
 
     uint32_t GenerateRenderProgram(const FlareBase::RenderProgram& a_program);
+    void SetProgramTexture(uint32_t a_addr, uint32_t a_slot, uint32_t a_textureAddr);
     void DestroyRenderProgram(uint32_t a_addr);
     inline FlareBase::RenderProgram GetRenderProgram(uint32_t a_addr) const
     {
@@ -67,6 +72,9 @@ public:
     {
         return m_models[a_addr];
     }
+    
+    uint32_t GenerateTexture(uint32_t a_width, uint32_t a_height, const unsigned char* a_data);
+    void DestroyTexture(uint32_t a_addr);
 
     void Clear();
 };
