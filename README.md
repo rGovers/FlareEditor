@@ -1,3 +1,6 @@
+# Old repo moved and renamed 
+https://github.com/rGovers/IcarianEditor
+
 # FlareEditor
 The editor for Flare Engine.
 
